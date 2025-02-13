@@ -1,36 +1,28 @@
-import { AuthButton } from "components/auth/AuthButton";
-import { HapticTab } from "components/HapticTab";
-import { IconSymbol } from "components/ui/IconSymbol";
-import TabBarBackground from "components/ui/TabBarBackground";
-import { Colors } from "constants/Colors";
-import { useBottomTabOverflow } from "hooks/useBottomTabOverflow";
-import { useColorScheme } from "hooks/useColorScheme";
-import { Tabs } from "expo-router";
-import React from "react";
-import { Platform, View } from "react-native";
+import { HapticTab } from 'components/HapticTab';
+import { AuthButton } from 'components/auth/AuthButton';
+import { IconSymbol } from 'components/ui/IconSymbol';
+import TabBarBackground from 'components/ui/TabBarBackground';
+import { Colors } from 'constants/Colors';
+import { Tabs } from 'expo-router';
+import { useBottomTabOverflow } from 'hooks/useBottomTabOverflow';
+import { useColorScheme } from 'hooks/useColorScheme';
+import React from 'react';
+import { Platform, View } from 'react-native';
 
-type IconName = React.ComponentProps<typeof IconSymbol>["name"];
+type IconName = React.ComponentProps<typeof IconSymbol>['name'];
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const theme = colorScheme ?? "light";
+  const theme = colorScheme ?? 'light';
   const bottomOverflow = useBottomTabOverflow();
 
-  const renderTabIcon = (
-    iconName: IconName,
-    color: string,
-    focused: boolean
-  ) => (
-    <View style={{ alignItems: "center" }}>
-      <IconSymbol
-        size={Platform.select({ web: 24, default: 28 })}
-        name={iconName}
-        color={color}
-      />
+  const renderTabIcon = (iconName: IconName, color: string, focused: boolean) => (
+    <View style={{ alignItems: 'center' }}>
+      <IconSymbol size={Platform.select({ web: 24, default: 28 })} name={iconName} color={color} />
       {focused && (
         <View
           style={{
-            position: "absolute",
+            position: 'absolute',
             bottom: Platform.select({ web: -25, default: -8 }),
             width: 4,
             height: 4,
@@ -53,9 +45,9 @@ export default function TabLayout() {
           tabBarButton: HapticTab,
           tabBarBackground: () => <TabBarBackground />,
           tabBarStyle: {
-            position: "absolute",
+            position: 'absolute',
             height: bottomOverflow,
-            backgroundColor: "transparent",
+            backgroundColor: 'transparent',
             borderTopWidth: 0,
             elevation: 0,
             ...Platform.select({
@@ -72,17 +64,17 @@ export default function TabLayout() {
             ...Platform.select({
               web: {
                 fontSize: 13,
-                fontWeight: "500",
+                fontWeight: '500',
                 paddingTop: 4,
                 marginTop: -4,
               },
               ios: {
                 fontSize: 12,
-                fontWeight: "500",
+                fontWeight: '500',
               },
               default: {
                 fontSize: 12,
-                fontWeight: "500",
+                fontWeight: '500',
               },
             }),
           },
@@ -93,37 +85,28 @@ export default function TabLayout() {
               default: 4,
             }),
           },
-          tabBarActiveBackgroundColor: "transparent",
-        }}
-      >
+          tabBarActiveBackgroundColor: 'transparent',
+        }}>
         <Tabs.Screen
           name="index"
           options={{
-            title: "Scenery",
-            tabBarIcon: ({ color, focused }) =>
-              renderTabIcon("house.fill", color, focused),
+            title: 'Scenery',
+            tabBarIcon: ({ color, focused }) => renderTabIcon('house.fill', color, focused),
           }}
         />
         <Tabs.Screen
           name="explore"
           options={{
-            title: "Share",
-            tabBarIcon: ({ color, focused }) =>
-              renderTabIcon("paperplane.fill", color, focused),
-          }}
-        />
-        <Tabs.Screen
-          name="(learn)"
-          options={{
-            href: null,
+            title: 'Share',
+            tabBarIcon: ({ color, focused }) => renderTabIcon('paperplane.fill', color, focused),
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
-            title: "Profile",
+            title: 'Profile',
             tabBarIcon: ({ color, focused }) =>
-              renderTabIcon("person.crop.circle.fill", color, focused),
+              renderTabIcon('person.crop.circle.fill', color, focused),
           }}
         />
       </Tabs>

@@ -1,9 +1,9 @@
-import { Colors } from "constants/Colors";
-import { Ionicons } from "@expo/vector-icons";
-import { useRoomContext, useVoiceAssistant } from "@livekit/components-react";
-import { RoomEvent } from "livekit-client";
-import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
+import { useRoomContext, useVoiceAssistant } from '@livekit/components-react';
+import { Colors } from 'constants/Colors';
+import { RoomEvent } from 'livekit-client';
+import React, { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 /**
  * Smoothly chase one Animated.Value to a target,
@@ -33,10 +33,10 @@ export function SimpleVoiceAssistant(props: {
     try {
       message = JSON.parse(dataStr);
     } catch (err) {
-      console.error("Could not parse JSON from data channel:", dataStr);
+      console.error('Could not parse JSON from data channel:', dataStr);
       return;
     }
-    if (message.type === "interaction_success") {
+    if (message.type === 'interaction_success') {
       props.onInteractionSuccess(true);
     } else {
       //Received unknown data. Skip.
@@ -139,14 +139,14 @@ export function SimpleVoiceAssistant(props: {
   useEffect(() => {
     // We'll let the loop do its thing.
     // We just toggle isSpeakingRef for the loop logic
-    isSpeakingRef.current = state === "speaking";
+    isSpeakingRef.current = state === 'speaking';
     props.onStateChange(state);
   }, [state, props]);
 
   return (
     <View style={styles.controlBar}>
       <View style={styles.roomConnectionControl}>
-        {state === "disconnected" ? (
+        {state === 'disconnected' ? (
           <TouchableOpacity onPress={props.onConnectButtonClick}>
             <Ionicons name="call" size={25} color={Colors.dark.background} />
           </TouchableOpacity>
@@ -157,13 +157,10 @@ export function SimpleVoiceAssistant(props: {
         )}
       </View>
 
-      {state !== "disconnected" && (
+      {state !== 'disconnected' && (
         <View style={styles.soundBarsContainer}>
           {animationValues.map((anim, i) => (
-            <Animated.View
-              key={i}
-              style={[styles.soundBar, { height: anim }]}
-            />
+            <Animated.View key={i} style={[styles.soundBar, { height: anim }]} />
           ))}
         </View>
       )}
@@ -173,9 +170,9 @@ export function SimpleVoiceAssistant(props: {
 
 const styles = StyleSheet.create({
   controlBar: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     gap: 16,
   },
   roomConnectionControl: {
@@ -183,13 +180,13 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     backgroundColor: Colors.dark.tint,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   soundBarsContainer: {
     height: 24,
-    flexDirection: "row",
-    alignItems: "flex-end",
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     gap: 4,
   },
   soundBar: {

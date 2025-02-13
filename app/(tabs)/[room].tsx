@@ -6,6 +6,7 @@ import { ThemedView } from 'components/ThemedView';
 import { IconSymbol } from 'components/ui/IconSymbol';
 import { Colors } from 'constants/Colors';
 import { Audio } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useColorScheme } from 'hooks/useColorScheme';
 import { MediaDeviceFailure } from 'livekit-client';
@@ -109,6 +110,11 @@ export default function RoomScreen() {
   if (!scene) {
     return (
       <ThemedView style={styles.container}>
+        <LinearGradient
+          colors={['#007AFF', 'rgba(0, 122, 255, 0)']}
+          style={StyleSheet.absoluteFill}
+          locations={[0, 1]}
+        />
         <View style={styles.loading}>
           <ThemedText>{error || 'Loading scene...'}</ThemedText>
         </View>
@@ -118,6 +124,11 @@ export default function RoomScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <LinearGradient
+        colors={['#007AFF', 'rgba(0, 122, 255, 0)']}
+        style={StyleSheet.absoluteFill}
+        locations={[0, 1]}
+      />
       <View
         style={[
           styles.header,
@@ -125,7 +136,7 @@ export default function RoomScreen() {
         ]}>
         <TouchableOpacity onPress={handleDisconnect} style={styles.backButton}>
           <IconSymbol name="chevron.left" size={24} color={Colors[theme].text} />
-          <ThemedText>Back</ThemedText>
+          <ThemedText style={styles.backButtonText}>Back</ThemedText>
         </TouchableOpacity>
       </View>
 
@@ -154,9 +165,6 @@ export default function RoomScreen() {
                 {scene.title}
               </ThemedText>
               <ThemedText style={styles.description}>{scene.description}</ThemedText>
-              <View style={styles.difficultyBadge}>
-                <ThemedText style={styles.difficultyText}>{scene.difficulty}</ThemedText>
-              </View>
             </View>
           </View>
           <RoomAudioRenderer />
@@ -181,17 +189,23 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingBottom: 10,
+    zIndex: 1,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
+  backButtonText: {
+    fontSize: 16,
+    color: Colors.light.text,
+  },
   content: {
     flex: 1,
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 20,
+    zIndex: 1,
   },
   sceneInfo: {
     alignItems: 'center',
@@ -201,12 +215,14 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
     marginBottom: 8,
+    color: Colors.light.text,
   },
   description: {
     textAlign: 'center',
     opacity: 0.8,
     maxWidth: 600,
     marginBottom: 12,
+    color: Colors.light.text,
   },
   difficultyBadge: {
     paddingHorizontal: 12,
@@ -230,6 +246,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.error,
     marginHorizontal: 20,
     borderRadius: 8,
+    zIndex: 1,
   },
   errorText: {
     color: '#FFFFFF',

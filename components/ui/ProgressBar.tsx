@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { View, Animated, StyleSheet } from 'react-native';
 import { Colors } from '../../constants/Colors';
 
@@ -23,10 +23,7 @@ const ProgressBar = ({ currentStep, totalSteps }: ProgressBarProps) => {
       {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => {
         if (step < currentStep) {
           return (
-            <View
-              key={step}
-              style={[styles.progressBar, { backgroundColor: Colors.dark.tint }]}
-            />
+            <View key={step} style={[styles.progressBar, { backgroundColor: Colors.dark.tint }]} />
           );
         }
 

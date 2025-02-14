@@ -2,12 +2,9 @@ import { ThemedText } from 'components/ThemedText';
 import { IconSymbol } from 'components/ui/IconSymbol';
 import { Colors } from 'constants/Colors';
 import { useColorScheme } from 'hooks/useColorScheme';
-// import { supabase } from "supabaseClient";
-import React from 'react';
 import { Image, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Scene } from 'types/scenes';
-
-import { supabase } from '../../utils/supabase';
+import { supabase } from 'utils/supabase';
 
 interface SceneCardProps {
   scene: Scene;
@@ -82,10 +79,7 @@ const styles = StyleSheet.create({
     height: Platform.select({ web: 240, default: 250 }),
     ...Platform.select({
       ios: {
-        shadowColor: 'rgba(0,0,0,0.1)',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
       },
       android: {
         elevation: 4,

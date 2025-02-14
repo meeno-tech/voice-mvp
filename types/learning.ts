@@ -1,16 +1,16 @@
 // types/learning.ts
 
 export type NodeType =
-  | "tutorial"
-  | "setup"
-  | "lesson"
-  | "checkpoint"
-  | "challenge"
-  | "achievement"
-  | "profile";
+  | 'tutorial'
+  | 'setup'
+  | 'lesson'
+  | 'checkpoint'
+  | 'challenge'
+  | 'achievement'
+  | 'profile';
 
 // New content page types
-export type LessonContentType = "voice" | "text" | "listening" | "image";
+export type LessonContentType = 'voice' | 'text' | 'listening' | 'image';
 
 export interface BaseLessonPage {
   id: string;
@@ -19,7 +19,7 @@ export interface BaseLessonPage {
 }
 
 export interface VoiceLessonPage extends BaseLessonPage {
-  type: "voice";
+  type: 'voice';
   prompt: string;
   expectedResponse?: string;
   feedback?: {
@@ -29,40 +29,36 @@ export interface VoiceLessonPage extends BaseLessonPage {
 }
 
 export interface TextLessonPage extends BaseLessonPage {
-  type: "text";
+  type: 'text';
   content: string;
-  style?: "normal" | "quote" | "highlight" | "warning";
+  style?: 'normal' | 'quote' | 'highlight' | 'warning';
 }
 
 export interface ListeningLessonPage extends BaseLessonPage {
-  type: "listening";
+  type: 'listening';
   audioUrl: string;
   transcript?: string;
   duration: number;
 }
 
 export interface ImageLessonPage extends BaseLessonPage {
-  type: "image";
+  type: 'image';
   imageUrl: string;
   caption?: string;
   altText: string;
 }
 
-export type LessonPage =
-  | VoiceLessonPage
-  | TextLessonPage
-  | ListeningLessonPage
-  | ImageLessonPage;
+export type LessonPage = VoiceLessonPage | TextLessonPage | ListeningLessonPage | ImageLessonPage;
 
 export interface Question {
   text?: string;
   type?:
-    | "voice-yes-no"
-    | "multiple-choice"
-    | "text"
-    | "voice-input"
-    | "multiple-select"
-    | "single-select";
+    | 'voice-yes-no'
+    | 'multiple-choice'
+    | 'text'
+    | 'voice-input'
+    | 'multiple-select'
+    | 'single-select';
   category?: string;
   prompt?: string;
   options?: string[];
@@ -71,7 +67,7 @@ export interface Question {
 
 export interface ProfileField {
   name: string;
-  type: "select" | "number" | "text";
+  type: 'select' | 'number' | 'text';
   required: boolean;
 }
 

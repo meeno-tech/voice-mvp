@@ -1,11 +1,11 @@
 // components/auth/AuthModal.tsx
-import { ThemedText } from "components/ThemedText";
-import { ThemedView } from "components/ThemedView";
-import { IconSymbol } from "components/ui/IconSymbol";
-import { Colors } from "constants/Colors";
-import { useAuth } from "contexts/AuthContext";
-import { useColorScheme } from "hooks/useColorScheme";
-import React, { useEffect, useState } from "react";
+import { ThemedText } from 'components/ThemedText';
+import { ThemedView } from 'components/ThemedView';
+import { IconSymbol } from 'components/ui/IconSymbol';
+import { Colors } from 'constants/Colors';
+import { useAuth } from 'contexts/AuthContext';
+import { useColorScheme } from 'hooks/useColorScheme';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,7 +16,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+} from 'react-native';
 
 interface AuthModalProps {
   visible: boolean;
@@ -25,60 +25,58 @@ interface AuthModalProps {
 
 export function AuthModal({ visible, onClose }: AuthModalProps) {
   const [isSignUp, setIsSignUp] = useState(true); // Default to sign up flow
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   const { signIn, signUp } = useAuth();
   const colorScheme = useColorScheme();
-  const theme = colorScheme ?? "light";
+  const theme = colorScheme ?? 'light';
 
   // Reset form when modal is opened
   useEffect(() => {
     if (visible) {
-      setEmail("");
-      setPassword("");
-      setError("");
+      setEmail('');
+      setPassword('');
+      setError('');
       setIsSignUp(true);
     }
   }, [visible]);
 
   const handleAuth = async () => {
     if (!email || !password) {
-      setError("Please fill in all fields");
+      setError('Please fill in all fields');
       return;
     }
 
     try {
       setLoading(true);
-      setError("");
+      setError('');
 
       if (isSignUp) {
         await signUp(email, password);
-        console.log("Sign up completed for:", email);
+        console.log('Sign up completed for:', email);
       } else {
         await signIn.email(email, password);
-        console.log("Sign in completed for:", email);
+        console.log('Sign in completed for:', email);
       }
 
       onClose();
     } catch (err) {
-      console.error("Auth error:", err);
+      console.error('Auth error:', err);
       if (err instanceof Error) {
         // Handle specific Supabase errors more gracefully
-        if (err.message.includes("User already registered")) {
-          setError(
-            "An account with this email already exists. Please sign in instead."
-          );
+        if (err.message.includes('User already registered')) {
+          setError('An account with this email already exists. Please sign in instead.');
           setIsSignUp(false);
-        } else if (err.message.includes("Invalid login credentials")) {
-          setError("Invalid email or password. Please try again.");
+        } else if (err.message.includes('Invalid login credentials')) {
+          setError('Invalid email or password. Please try again.');
         } else {
           setError(err.message);
         }
       } else {
-        setError("An unexpected error occurred. Please try again.");
+        setError('An unexpected error occurred. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -86,29 +84,19 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardView}
-        >
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}>
           <Pressable onPress={(e) => e.stopPropagation()}>
             <ThemedView style={styles.container}>
               <View style={styles.header}>
                 <ThemedText type="subtitle">
-                  {isSignUp ? "Create Account" : "Welcome Back"}
+                  {isSignUp ? 'Create Account' : 'Welcome Back'}
                 </ThemedText>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                  <IconSymbol
-                    name="xmark"
-                    size={20}
-                    color={Colors[theme].text}
-                  />
+                  <IconSymbol name="xmark" size={20} color={Colors[theme].text} />
                 </TouchableOpacity>
               </View>
 
@@ -134,9 +122,7 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
                   editable={!loading}
                 />
 
-                {error ? (
-                  <ThemedText style={styles.error}>{error}</ThemedText>
-                ) : null}
+                {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
 
                 <TouchableOpacity
                   style={[
@@ -145,37 +131,23 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
                     loading && styles.buttonDisabled,
                   ]}
                   onPress={handleAuth}
-                  disabled={loading}
-                >
-                  <ThemedText
-                    style={styles.buttonText}
-                    lightColor="#FFFFFF"
-                    darkColor="#FFFFFF"
-                  >
-                    {loading
-                      ? "Please wait..."
-                      : isSignUp
-                      ? "Create Account"
-                      : "Sign In"}
+                  disabled={loading}>
+                  <ThemedText style={styles.buttonText} lightColor="#FFFFFF" darkColor="#FFFFFF">
+                    {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
                   </ThemedText>
-                  {loading && (
-                    <ActivityIndicator color="#FFFFFF" style={styles.spinner} />
-                  )}
+                  {loading && <ActivityIndicator color="#FFFFFF" style={styles.spinner} />}
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => {
                     setIsSignUp(!isSignUp);
-                    setError(""); // Clear any existing errors
+                    setError(''); // Clear any existing errors
                   }}
                   style={styles.switchButton}
-                  disabled={loading}
-                >
-                  <ThemedText
-                    style={[styles.switchText, loading && styles.textDisabled]}
-                  >
+                  disabled={loading}>
+                  <ThemedText style={[styles.switchText, loading && styles.textDisabled]}>
                     {isSignUp
-                      ? "Already have an account? Sign in"
+                      ? 'Already have an account? Sign in'
                       : "Don't have an account? Sign up"}
                   </ThemedText>
                 </TouchableOpacity>
@@ -232,23 +204,23 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   keyboardView: {
-    width: "100%",
-    alignItems: "center",
+    width: '100%',
+    alignItems: 'center',
   },
   container: {
-    width: "90%",
+    width: '90%',
     maxWidth: 400,
     borderRadius: 16,
     padding: 24,
     marginHorizontal: 20,
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
@@ -257,14 +229,14 @@ const styles = StyleSheet.create({
         elevation: 5,
       },
       web: {
-        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
       },
     }),
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 24,
   },
   closeButton: {
@@ -276,7 +248,7 @@ const styles = StyleSheet.create({
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.1)",
+    borderColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 16,
@@ -284,9 +256,9 @@ const styles = StyleSheet.create({
   button: {
     height: 48,
     borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
     gap: 8,
   },
   buttonDisabled: {
@@ -294,19 +266,19 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   error: {
     color: Colors.light.error,
     fontSize: 14,
-    textAlign: "center",
+    textAlign: 'center',
   },
   switchButton: {
-    alignItems: "center",
+    alignItems: 'center',
   },
   switchText: {
     fontSize: 14,
-    textDecorationLine: "underline",
+    textDecorationLine: 'underline',
   },
   textDisabled: {
     opacity: 0.7,

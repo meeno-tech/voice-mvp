@@ -2,20 +2,39 @@ import { AuthProvider } from 'contexts/AuthContext';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Sentry from '@sentry/react-native';
+import { verifyInstallation } from 'nativewind';
 
 Sentry.init({
   dsn: 'https://aabcd97fc09b372eedba3c04f1a84d49@o4508814661976064.ingest.us.sentry.io/4508814663811072',
   debug: true,
 });
 
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
+
 function RootLayout() {
-  useFonts({
+  const nativeWindInstalled = verifyInstallation();
+  console.log('NativeWind installed:', nativeWindInstalled);
+
+  const [loaded] = useFonts({
     BarlowCondensed: require('../assets/fonts/BarlowCondensed-Regular.ttf'),
   });
+
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded]);
+
+  if (!loaded) {
+    return null;
+  }
 
   return (
     <AuthProvider>

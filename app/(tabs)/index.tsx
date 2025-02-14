@@ -3,7 +3,7 @@ import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
 import { SceneCard } from 'components/scenes/SceneCard';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Scene, mockScenes } from 'types/scenes';
@@ -84,9 +84,7 @@ export default function ScenesScreen() {
         </View>
       </ScrollView>
 
-      {Platform.OS === 'web' && showPaywall && (
-        <PaywallModal onClose={() => setShowPaywall(false)} onContinue={handlePaywallContinue} />
-      )}
+      {Platform.OS === 'web' && showPaywall && <PaywallModal onContinue={handlePaywallContinue} />}
     </ThemedView>
   );
 }

@@ -10,7 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useColorScheme } from 'hooks/useColorScheme';
 import { MediaDeviceFailure } from 'livekit-client';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Scene, mockScenes } from 'types/scenes';

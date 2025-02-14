@@ -1,13 +1,7 @@
 // contexts/AuthContext.tsx
-import { supabase } from "utils/supabase";
-import { Session, User } from "@supabase/supabase-js";
-import React, {
-  createContext,
-  PropsWithChildren,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { supabase } from 'utils/supabase';
+import { Session, User } from '@supabase/supabase-js';
+import { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react';
 
 interface AuthContextType {
   session: Session | null;
@@ -32,30 +26,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     // Enable cross-tab auth state sync
-    const { data } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        // Only update if the state has actually changed
-        if (currentSession?.user?.id !== user?.id) {
-          console.log(
-            "Auth state changed:",
-            event,
-            "User:",
-            currentSession?.user?.email
-          );
-          setSession(currentSession);
-          setUser(currentSession?.user ?? null);
+    const { data } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      // Only update if the state has actually changed
+      if (currentSession?.user?.id !== user?.id) {
+        console.log('Auth state changed:', event, 'User:', currentSession?.user?.email);
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
 
-          // If user is confirmed and signed in, ensure profile exists
-          if (event === "SIGNED_IN" && currentSession?.user) {
-            handleProfileCreation(currentSession.user);
-          }
+        // If user is confirmed and signed in, ensure profile exists
+        if (event === 'SIGNED_IN' && currentSession?.user) {
+          handleProfileCreation(currentSession.user);
         }
       }
-    );
+    });
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      console.log("Initial session:", initialSession?.user?.email);
+      console.log('Initial session:', initialSession?.user?.email);
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
 
@@ -76,15 +63,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
     try {
       // Check if profile already exists
       const { data: existingProfile, error: fetchError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
         .single();
 
       if (fetchError && !existingProfile) {
         // Create profile if it doesn't exist
         const { error: insertError } = await supabase
-          .from("profiles")
+          .from('profiles')
           .insert([
             {
               id: user.id,
@@ -95,13 +82,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
           .single();
 
         if (insertError) {
-          console.error("Error creating profile:", insertError);
+          console.error('Error creating profile:', insertError);
         } else {
-          console.log("Profile created for confirmed user:", user.email);
+          console.log('Profile created for confirmed user:', user.email);
         }
       }
     } catch (error) {
-      console.error("Error handling profile creation:", error);
+      console.error('Error handling profile creation:', error);
     }
   };
 
@@ -117,34 +104,34 @@ export function AuthProvider({ children }: PropsWithChildren) {
             password,
           });
           if (error) throw error;
-          console.log("Sign in successful:", data.user?.email);
+          console.log('Sign in successful:', data.user?.email);
         } catch (error) {
-          console.error("Sign in error:", error);
+          console.error('Sign in error:', error);
           throw error;
         }
       },
       google: async () => {
         const { error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
+          provider: 'google',
         });
         if (error) throw error;
       },
       apple: async () => {
         const { error } = await supabase.auth.signInWithOAuth({
-          provider: "apple",
+          provider: 'apple',
         });
         if (error) throw error;
       },
       github: async () => {
         const { error } = await supabase.auth.signInWithOAuth({
-          provider: "github",
+          provider: 'github',
         });
         if (error) throw error;
       },
     },
     signUp: async (email: string, password: string) => {
       try {
-        console.log("Starting sign up process for:", email);
+        console.log('Starting sign up process for:', email);
 
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -152,18 +139,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
         });
 
         if (error) throw error;
-        if (!data.user)
-          throw new Error("Sign up successful but no user returned");
+        if (!data.user) throw new Error('Sign up successful but no user returned');
 
-        console.log(
-          "Sign up successful - confirmation email sent to:",
-          data.user.email
-        );
-        alert(
-          "Please check your email to confirm your account before signing in."
-        );
+        console.log('Sign up successful - confirmation email sent to:', data.user.email);
+        alert('Please check your email to confirm your account before signing in.');
       } catch (error) {
-        console.error("Sign up process failed:", error);
+        console.error('Sign up process failed:', error);
         throw error;
       }
     },
@@ -174,9 +155,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         // Clear local state
         setSession(null);
         setUser(null);
-        console.log("Sign out successful");
+        console.log('Sign out successful');
       } catch (error) {
-        console.error("Sign out error:", error);
+        console.error('Sign out error:', error);
         throw error;
       }
     },
@@ -188,7 +169,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

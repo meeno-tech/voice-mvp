@@ -1,27 +1,23 @@
 // components/ThemedText.tsx
 
-import { Fonts } from "constants/Fonts";
-import { useThemeColor } from "hooks/useThemeColor";
-import React from "react";
-import { Platform, StyleSheet, Text, TextProps, TextStyle } from "react-native";
+import { Fonts } from 'constants/Fonts';
+import { useThemeColor } from 'hooks/useThemeColor';
+import { Platform, StyleSheet, Text, TextProps, TextStyle } from 'react-native';
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
-  type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link";
+  type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
 };
 
 export function ThemedText({
   style,
   lightColor,
   darkColor,
-  type = "default",
+  type = 'default',
   ...rest
 }: ThemedTextProps) {
-  const color = useThemeColor(
-    { light: lightColor, dark: darkColor },
-    "text"
-  ) as string;
+  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text') as string;
 
   // Create the base style based on the type
   const baseStyle: TextStyle = {
@@ -30,7 +26,7 @@ export function ThemedText({
   };
 
   // Handle web-specific font styles
-  if (Platform.OS === "web") {
+  if (Platform.OS === 'web') {
     Object.assign(baseStyle, {
       fontFamily: Fonts.system,
       fontWeight: Fonts.weights.normal,
@@ -38,7 +34,7 @@ export function ThemedText({
   }
 
   // Combine all styles
-  let combinedStyle: TextStyle = StyleSheet.flatten([baseStyle, style]);
+  const combinedStyle: TextStyle = StyleSheet.flatten([baseStyle, style]);
 
   return <Text style={combinedStyle} {...rest} />;
 }
@@ -89,7 +85,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Fonts.system,
     fontWeight: Fonts.weights.medium,
-    color: "#0a7ea4",
+    color: '#0a7ea4',
     letterSpacing: Platform.select({
       web: -0.011,
       default: 0,

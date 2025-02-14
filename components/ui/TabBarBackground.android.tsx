@@ -1,13 +1,10 @@
-import { Colors } from "@/constants/Colors";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import React from "react";
-import { StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Colors } from 'constants/Colors';
+import { useColorScheme } from 'hooks/useColorScheme';
+import { StyleSheet, View } from 'react-native';
 
 export default function TabBarBackground() {
-  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
-  const theme = colorScheme ?? "light";
+  const theme = colorScheme ?? 'light';
 
   return (
     <View
@@ -25,7 +22,7 @@ export default function TabBarBackground() {
 
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,

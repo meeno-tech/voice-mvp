@@ -111,9 +111,9 @@ export default function RoomScreen() {
     return (
       <ThemedView style={styles.container}>
         <LinearGradient
-          colors={['#007AFF', 'rgba(0, 122, 255, 0)']}
+          colors={['rgba(255, 127, 127, 0.3)', 'rgba(255, 127, 127, 0.05)']}
           style={StyleSheet.absoluteFill}
-          locations={[0, 1]}
+          locations={[0, 0.9]}
         />
         <View style={styles.loading}>
           <ThemedText>{error || 'Loading scene...'}</ThemedText>
@@ -125,9 +125,9 @@ export default function RoomScreen() {
   return (
     <ThemedView style={styles.container}>
       <LinearGradient
-        colors={['#007AFF', 'rgba(0, 122, 255, 0)']}
+        colors={['rgba(255, 127, 127, 0.3)', 'rgba(255, 127, 127, 0.05)']}
         style={StyleSheet.absoluteFill}
-        locations={[0, 1]}
+        locations={[0, 0.9]}
       />
       <View
         style={[

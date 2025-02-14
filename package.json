@@ -14,6 +14,7 @@
   "dependencies": {
     "@expo/metro-runtime": "~4.0.1",
     "@livekit/components-react": "^2.8.1",
+    "@sentry/react-native": "~6.3.0",
     "@supabase/supabase-js": "^2.48.1",
     "eslint-config-expo": "~8.0.1",
     "expo": "^52.0.33",
@@ -29,6 +30,7 @@
     "expo-symbols": "~0.2.2",
     "expo-system-ui": "~4.0.8",
     "nativewind": "latest",
+    "promise": "^8.3.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native": "0.76.7",
@@ -43,6 +45,7 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@eslint/js": "^9.20.0",
+    "@react-native-community/cli": "latest",
     "@types/react": "~18.3.12",
     "@typescript-eslint/eslint-plugin": "^7.7.0",
     "@typescript-eslint/parser": "^7.7.0",
@@ -52,7 +55,7 @@
     "eslint-plugin-prettier": "^5.2.3",
     "eslint-plugin-react": "^7.37.4",
     "globals": "^15.15.0",
-    "prettier": "^3.5.1",
+    "prettier": "3.5.1",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.0",
     "typescript": "~5.3.3",
@@ -63,5 +66,6 @@
     "root": true
   },
   "main": "index",
-  "private": true
+  "private": true,
+  "expo.doctor.reactNativeDirectoryCheck.listUnknownPackages": false
 }

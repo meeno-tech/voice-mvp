@@ -2,9 +2,9 @@ import { BlurView } from 'expo-blur';
 import { Platform, StyleSheet, TextStyle, View, ViewStyle } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { ThemedText } from 'components/ThemedText';
+import { ThemedView } from 'components/ThemedView';
+import { useColorScheme } from 'hooks/useColorScheme';
 
 export function StatsCard() {
   const colorScheme = useColorScheme();

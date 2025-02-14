@@ -16,6 +16,7 @@ export default [
   {
     rules: {
       'react/prop-types': 'off', // ✅ Disable PropTypes validation for TypeScript
+      '@typescript-eslint/no-require-imports': 'off', // ✅ Disable require() imports for TypeScript
     },
   },
 ];

@@ -3,6 +3,7 @@
     "name": "voice-mvp",
     "slug": "voice-mvp",
     "version": "1.0.0",
+    "newArchEnabled": true,
     "web": {
       "bundler": "metro",
       "output": "static",

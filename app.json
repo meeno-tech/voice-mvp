@@ -2,6 +2,7 @@
   "expo": {
     "name": "voice-mvp",
     "slug": "voice-mvp",
+    "owner": "meeno-technologies-inc",
     "version": "1.0.0",
     "newArchEnabled": true,
     "web": {

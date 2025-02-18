@@ -67,24 +67,31 @@ export default function RoomScreen() {
       setIsConnecting(true);
       setError(null);
 
-      const response = await fetch(
-        `https://cloud-api.livekit.io/api/sandbox/connection-details?roomName=${encodeURIComponent(
-          scene.roomName
-        )}&participantName=user_${Math.floor(Math.random() * 100000)}`,
-        {
-          method: 'POST',
-          headers: {
-            'X-Sandbox-ID': 'interactive-sensor-22a69a',
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const apiUrl = process.env.API_URL;
+      if (!apiUrl) {
+        throw new Error(
+          'API_URL environment variable is not configured. Please check your .env file and ensure API_URL is set correctly.'
+        );
+      }
+      const response = await fetch(`${apiUrl}/lk-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scene_name: scene.roomName,
+          participant_name: `user_${Math.floor(Math.random() * 100000)}`,
+        }),
+      });
 
       if (!response.ok) {
         throw new Error('Failed to get connection details');
       }
 
       const data = await response.json();
+
       setConnectionDetails({
         serverUrl: data.serverUrl,
         token: data.participantToken,

@@ -29,6 +29,7 @@
     "expo-status-bar": "~2.0.1",
     "expo-symbols": "~0.2.2",
     "expo-system-ui": "~4.0.8",
+    "nanoid": "^5.1.0",
     "nativewind": "latest",
     "promise": "^8.3.0",
     "react": "18.3.1",

@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Scene, mockScenes } from 'types/scenes';
+import { generateUniqueRoomName, getBaseRoomName } from 'utils/roomUtils';
 
 export default function RoomScreen() {
   const params = useLocalSearchParams();
@@ -23,6 +24,7 @@ export default function RoomScreen() {
   const theme = colorScheme ?? 'light';
 
   const [scene, setScene] = useState<Scene | null>(null);
+  const [uniqueRoomName, setUniqueRoomName] = useState<string>('');
   const [connectionDetails, setConnectionDetails] = useState<{
     serverUrl: string;
     token: string;
@@ -52,7 +54,14 @@ export default function RoomScreen() {
 
       if (foundScene) {
         setScene(foundScene);
-        connectToScene(foundScene);
+        // Generate unique room name for this instance
+        const uniqueRoomId = generateUniqueRoomName(foundScene.roomName);
+        setUniqueRoomName(uniqueRoomId);
+        console.log('Generated unique room:', {
+          baseRoomName: getBaseRoomName(uniqueRoomId),
+          uniqueRoomId,
+        });
+        connectToScene(foundScene, uniqueRoomId);
       } else {
         setError('Scene not found');
         router.back();
@@ -62,7 +71,7 @@ export default function RoomScreen() {
     initializeRoom();
   }, [params.room]);
 
-  const connectToScene = async (scene: Scene) => {
+  const connectToScene = async (scene: Scene, uniqueRoomId: string) => {
     try {
       setIsConnecting(true);
       setError(null);
@@ -75,13 +84,14 @@ export default function RoomScreen() {
           'API_URL environment variable is not configured. Please check your .env file and ensure API_URL is set correctly.'
         );
       }
+
       const response = await fetch(`${apiUrl}/lk-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          scene_name: scene.roomName,
+          scene_name: uniqueRoomId,
           participant_name: `user_${Math.floor(Math.random() * 100000)}`,
         }),
       });
@@ -162,7 +172,7 @@ export default function RoomScreen() {
           video={false}
           onDisconnected={handleDisconnect}
           onError={handleRoomError}
-          onConnected={() => console.log('Connected to room')}
+          onConnected={() => console.log('Connected to room:', uniqueRoomName)}
           onMediaDeviceFailure={onMediaDeviceFailure}>
           <View style={styles.content}>
             <CountdownTimer duration={240} />

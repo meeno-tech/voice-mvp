@@ -40,18 +40,7 @@ export default function RoomScreen() {
 
     try {
       const room = roomRef.current;
-
-      // First, stop all local tracks
-      const localParticipant = room.localParticipant;
-      if (localParticipant) {
-        localParticipant.trackPublications.forEach((publication) => {
-          if (publication.track) {
-            publication.track.stop();
-          }
-        });
-      }
-
-      // Then disconnect from the room
+      console.log('Starting room cleanup...');
       await room.disconnect(true);
       roomRef.current = null;
       console.log('Room cleanup completed successfully');

@@ -3,9 +3,9 @@ import { HapticTab } from 'components/HapticTab';
 import { IconSymbol } from 'components/ui/IconSymbol';
 import TabBarBackground from 'components/ui/TabBarBackground';
 import { Colors } from 'constants/Colors';
+import { Tabs } from 'expo-router';
 import { useBottomTabOverflow } from 'hooks/useBottomTabOverflow';
 import { useColorScheme } from 'hooks/useColorScheme';
-import { Tabs } from 'expo-router';
 import { Platform, View } from 'react-native';
 
 type IconName = React.ComponentProps<typeof IconSymbol>['name'];
@@ -98,12 +98,6 @@ export default function TabLayout() {
           options={{
             title: 'Share',
             tabBarIcon: ({ color, focused }) => renderTabIcon('paperplane.fill', color, focused),
-          }}
-        />
-        <Tabs.Screen
-          name="(learn)"
-          options={{
-            href: null,
           }}
         />
         <Tabs.Screen

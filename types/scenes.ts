@@ -11,7 +11,6 @@ export interface Scene {
   isLocked?: boolean;
 }
 
-// Mock data
 export const mockScenes: Scene[] = [
   {
     id: '1',
@@ -30,6 +29,7 @@ export const mockScenes: Scene[] = [
     difficulty: 'beginner',
     category: 'social',
     imageUrl: 'Comedy-clubs-los-angeles_The-Comedy-Store.jpg',
+    isLocked: true,
   },
   {
     id: '3',
@@ -39,6 +39,7 @@ export const mockScenes: Scene[] = [
     difficulty: 'beginner',
     category: 'dating',
     imageUrl: 'young-woman-supermarket-buying_432566-2544.jpg',
+    isLocked: true,
   },
   {
     id: '4',

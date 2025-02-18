@@ -1,4 +1,4 @@
-import { LiveKitRoom, RoomAudioRenderer } from '@livekit/components-react';
+import { LiveKitRoom, RoomAudioRenderer, useRoomContext } from '@livekit/components-react';
 import { CallExperience } from 'components/CallExperience';
 import { CountdownTimer } from 'components/CountdownTimer';
 import { ThemedText } from 'components/ThemedText';
@@ -9,8 +9,8 @@ import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useColorScheme } from 'hooks/useColorScheme';
-import { MediaDeviceFailure } from 'livekit-client';
-import { useEffect, useState } from 'react';
+import { MediaDeviceFailure, Room } from 'livekit-client';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Scene, mockScenes } from 'types/scenes';
@@ -22,6 +22,8 @@ export default function RoomScreen() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
+  const roomRef = useRef<Room | null>(null);
+  const cleanupInProgressRef = useRef(false);
 
   const [scene, setScene] = useState<Scene | null>(null);
   const [uniqueRoomName, setUniqueRoomName] = useState<string>('');
@@ -31,6 +33,40 @@ export default function RoomScreen() {
   } | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const cleanupRoom = useCallback(async () => {
+    if (cleanupInProgressRef.current || !roomRef.current) return;
+    cleanupInProgressRef.current = true;
+
+    try {
+      const room = roomRef.current;
+
+      // First, stop all local tracks
+      const localParticipant = room.localParticipant;
+      if (localParticipant) {
+        localParticipant.trackPublications.forEach((publication) => {
+          if (publication.track) {
+            publication.track.stop();
+          }
+        });
+      }
+
+      // Then disconnect from the room
+      await room.disconnect(true);
+      roomRef.current = null;
+      console.log('Room cleanup completed successfully');
+    } catch (error) {
+      console.error('Error during room cleanup:', error);
+    } finally {
+      cleanupInProgressRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      cleanupRoom();
+    };
+  }, [cleanupRoom]);
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -114,14 +150,43 @@ export default function RoomScreen() {
     }
   };
 
-  const handleDisconnect = () => {
-    setConnectionDetails(null);
-    router.back();
+  const handleDisconnect = async () => {
+    try {
+      await cleanupRoom();
+      setConnectionDetails(null);
+      router.back();
+    } catch (error) {
+      console.error('Error during disconnect:', error);
+      router.back();
+    }
   };
 
   const handleRoomError = (error: Error) => {
     console.error('Room error:', error);
     setError(error.message);
+  };
+
+  const RoomContent = () => {
+    const room = useRoomContext();
+
+    useEffect(() => {
+      if (room) {
+        roomRef.current = room;
+      }
+    }, [room]);
+
+    return (
+      <View style={styles.content}>
+        <CountdownTimer duration={240} />
+        <CallExperience />
+        <View style={styles.sceneInfo}>
+          <ThemedText type="title" style={styles.title}>
+            {scene?.title}
+          </ThemedText>
+          <ThemedText style={styles.description}>{scene?.description}</ThemedText>
+        </View>
+      </View>
+    );
   };
 
   if (!scene) {
@@ -174,16 +239,7 @@ export default function RoomScreen() {
           onError={handleRoomError}
           onConnected={() => console.log('Connected to room:', uniqueRoomName)}
           onMediaDeviceFailure={onMediaDeviceFailure}>
-          <View style={styles.content}>
-            <CountdownTimer duration={240} />
-            <CallExperience />
-            <View style={styles.sceneInfo}>
-              <ThemedText type="title" style={styles.title}>
-                {scene.title}
-              </ThemedText>
-              <ThemedText style={styles.description}>{scene.description}</ThemedText>
-            </View>
-          </View>
+          <RoomContent />
           <RoomAudioRenderer />
         </LiveKitRoom>
       ) : (
@@ -240,18 +296,6 @@ const styles = StyleSheet.create({
     maxWidth: 600,
     marginBottom: 12,
     color: Colors.light.text,
-  },
-  difficultyBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-    backgroundColor: Colors.light.tint,
-  },
-  difficultyText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    textTransform: 'capitalize',
-    fontWeight: '600',
   },
   loading: {
     flex: 1,

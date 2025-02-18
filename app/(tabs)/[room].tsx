@@ -143,10 +143,10 @@ export default function RoomScreen() {
     try {
       await cleanupRoom();
       setConnectionDetails(null);
-      router.back();
+      router.replace('/(tabs)');
     } catch (error) {
       console.error('Error during disconnect:', error);
-      router.back();
+      router.replace('/(tabs)');
     }
   };
 

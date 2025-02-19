@@ -33,8 +33,20 @@ export default function ScenesScreen() {
       return;
     }
 
-    // Navigate using the room name instead of ID
-    router.push(`/(tabs)/${scene.roomName.toLowerCase()}`);
+    // Add timestamp to force component refresh on navigation
+    // TODO: Remove this workaround...it's just a quick fix for 2/18...famous last words
+    const timestamp = Date.now();
+    const roomPath = `/(tabs)/${scene.roomName.toLowerCase()}?t=${timestamp}`;
+
+    // For web platform, use window.location for a full refresh
+    if (Platform.OS === 'web') {
+      const baseUrl = window.location.origin;
+      const fullPath = `${baseUrl}${roomPath}`;
+      window.location.href = fullPath;
+    } else {
+      // For native platforms, use router.push
+      router.push(roomPath);
+    }
   }, []);
 
   const handlePaywallContinue = useCallback(() => {

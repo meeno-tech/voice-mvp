@@ -7,9 +7,9 @@ import { IconSymbol } from 'components/ui/IconSymbol';
 import { Colors } from 'constants/Colors';
 import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useColorScheme } from 'hooks/useColorScheme';
-import { MediaDeviceFailure, Room } from 'livekit-client';
+import { Room } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,11 +19,13 @@ import { generateUniqueRoomName, getBaseRoomName } from 'utils/roomUtils';
 export default function RoomScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
   const roomRef = useRef<Room | null>(null);
   const cleanupInProgressRef = useRef(false);
+  const mountedRef = useRef(false);
 
   const [scene, setScene] = useState<Scene | null>(null);
   const [uniqueRoomName, setUniqueRoomName] = useState<string>('');
@@ -33,6 +35,23 @@ export default function RoomScreen() {
   } | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Force component remounting on navigation
+  useEffect(() => {
+    // This will force the component to remount
+    // by setting a unique key based on the timestamp
+
+    // NOTE: Why do this? Because the /lk-token endpoint wasn't firing and
+    // we need to get this working asap
+
+    // TODO: Remove this workaround.
+    if (mountedRef.current) {
+      const timestamp = Date.now();
+      router.replace(`${pathname}?t=${timestamp}`);
+    } else {
+      mountedRef.current = true;
+    }
+  }, [pathname]);
 
   const cleanupRoom = useCallback(async () => {
     if (cleanupInProgressRef.current || !roomRef.current) return;
@@ -226,8 +245,7 @@ export default function RoomScreen() {
           video={false}
           onDisconnected={handleDisconnect}
           onError={handleRoomError}
-          onConnected={() => console.log('Connected to room:', uniqueRoomName)}
-          onMediaDeviceFailure={onMediaDeviceFailure}>
+          onConnected={() => console.log('Connected to room:', uniqueRoomName)}>
           <RoomContent />
           <RoomAudioRenderer />
         </LiveKitRoom>
@@ -238,10 +256,6 @@ export default function RoomScreen() {
       )}
     </ThemedView>
   );
-}
-
-function onMediaDeviceFailure(error?: MediaDeviceFailure) {
-  console.error('Media device failure:', error);
 }
 
 const styles = StyleSheet.create({

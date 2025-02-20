@@ -265,20 +265,22 @@ const styles = StyleSheet.create({
   },
   title: {
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 14,
     color: Colors.light.text,
     fontWeight: '600',
-    fontSize: Platform.select({ web: 32, default: 28 }),
+    fontSize: Platform.select({ web: 36, default: 28 }),
+    fontFamily: 'DelaGothicOne',
+    width: '80%',
+    textTransform: 'uppercase',
   },
   timerContainer: {
-    marginBottom: 12,
+    marginBottom: 24,
   },
   speechContainer: {
     marginBottom: 16,
   },
   instructionsContainer: {
     width: '100%',
-    paddingHorizontal: Platform.select({ web: 24, default: 16 }),
   },
   loading: {
     flex: 1,
@@ -304,7 +306,7 @@ const styles = StyleSheet.create({
       web: [{ translateX: -35 }],
       default: [{ translateX: -35 }],
     }),
-    width: 52,
+    width: 72,
     height: 64,
     borderRadius: 100,
     backgroundColor: 'rgba(0, 0, 0, 0.22)',

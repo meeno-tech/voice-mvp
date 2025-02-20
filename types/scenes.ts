@@ -14,7 +14,7 @@ export interface Scene {
 export const mockScenes: Scene[] = [
   {
     id: '1',
-    title: 'Pizza at Lucali’s',
+    title: 'Lucali’s Pizza',
     description: 'Offer her your scarf to keep warm outside Lucali’s.',
     roomName: 'NY-snow-pizza',
     difficulty: 'beginner',

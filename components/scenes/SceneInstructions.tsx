@@ -15,9 +15,9 @@ export function SceneInstructions({ scene }: SceneInstructionsProps) {
   // Map scene IDs to specific instructions
   const getInstructions = (scene: Scene): string => {
     const instructionsMap: Record<string, string> = {
-      '1': 'The girl behind you in line looks cold, but seems like she wants to talk to you.',
-      '2': 'The show is about to start, and she seems disappointed at not having a seat.',
-      '3': 'She looks unsure about what snacks to choose for the Super Bowl party.',
+      '1': 'The girl behind you in line looks cold, but seems like she wants to talk to you',
+      '2': 'The show is about to start, and she seems disappointed at not having a seat',
+      '3': 'She looks unsure about what snacks to choose for the Super Bowl party',
       // Add more scene-specific instructions as needed
     };
 
@@ -35,9 +35,8 @@ export function SceneInstructions({ scene }: SceneInstructionsProps) {
     );
   }
 
-  // For other platforms (Android, web)
   return (
-    <View style={[styles.container, { backgroundColor: 'rgba(255, 255, 255, 0.85)' }]}>
+    <View style={[styles.container]}>
       <ThemedText style={styles.instructions}>{instructions}</ThemedText>
     </View>
   );
@@ -57,7 +56,6 @@ const styles = StyleSheet.create({
         elevation: 1,
       },
       web: {
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.06)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
       },
@@ -68,12 +66,15 @@ const styles = StyleSheet.create({
         shadowRadius: 2,
       },
     }),
+    backgroundColor: 'transparent', // Make background fully transparent
   },
   instructions: {
     textAlign: 'center',
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: '500',
-    letterSpacing: Platform.select({ web: -0.2, default: 0 }),
+    fontSize: 17, // Reduced font size to half
+    lineHeight: 22, // Adjusted line height
+    fontWeight: '400',
+    letterSpacing: Platform.select({ web: -0.43, default: 0 }),
+    padding: 0, // Remove internal padding
+    margin: 0, // Remove internal margins
   },
 });

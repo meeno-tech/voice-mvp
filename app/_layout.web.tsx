@@ -1,5 +1,6 @@
-import { AuthProvider } from 'contexts/AuthContext';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import * as Sentry from '@sentry/react-native';
+import { AuthProvider } from 'contexts/AuthContext';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -7,7 +8,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import * as Sentry from '@sentry/react-native';
 
 Sentry.init({
   dsn: 'https://aabcd97fc09b372eedba3c04f1a84d49@o4508814661976064.ingest.us.sentry.io/4508814663811072',
@@ -20,6 +20,8 @@ SplashScreen.preventAutoHideAsync();
 function RootLayout() {
   const [loaded] = useFonts({
     BarlowCondensed: require('../assets/fonts/BarlowCondensed-Regular.ttf'),
+    DelaGothicOne: require('../assets/fonts/DelaGothicOne-Regular.ttf'),
+    Inter: require('../assets/fonts/Inter_18pt-Regular.ttf'),
   });
 
   useEffect(() => {

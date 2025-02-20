@@ -201,9 +201,9 @@ export default function RoomScreen() {
     return (
       <ThemedView style={styles.container}>
         <LinearGradient
-          colors={['rgba(255, 127, 127, 0.3)', 'rgba(255, 127, 127, 0.05)']}
+          colors={['#E7DFE2', '#E7DFE2', '#FD4C18']}
           style={StyleSheet.absoluteFill}
-          locations={[0, 0.9]}
+          locations={[0, 0.6, 1]}
         />
         <View style={styles.loading}>
           <ThemedText>{error || 'Loading scene...'}</ThemedText>
@@ -215,9 +215,9 @@ export default function RoomScreen() {
   return (
     <ThemedView style={styles.container}>
       <LinearGradient
-        colors={['rgba(255, 127, 127, 0.3)', 'rgba(255, 127, 127, 0.05)']}
+        colors={['#E7DFE2', '#E7DFE2', '#FD4C18']}
         style={StyleSheet.absoluteFill}
-        locations={[0, 0.9]}
+        locations={[0, 0.6, 1]}
       />
 
       {error && (
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 64,
     borderRadius: 100,
-    backgroundColor: 'rgba(0, 0, 0, 0.22)',
+    backgroundColor: 'rgba(0, 0, 0, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({

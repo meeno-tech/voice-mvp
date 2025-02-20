@@ -15,7 +15,7 @@ export function SceneInstructions({ scene }: SceneInstructionsProps) {
   // Map scene IDs to specific instructions
   const getInstructions = (scene: Scene): string => {
     const instructionsMap: Record<string, string> = {
-      '1': 'The girl behind you in line looks cold, but seems like she wants to talk to you',
+      '1': 'The girl behind you in line looks cold, and seems like she wants to talk to you',
       '2': 'The show is about to start, and she seems disappointed at not having a seat',
       '3': 'She looks unsure about what snacks to choose for the Super Bowl party',
       // Add more scene-specific instructions as needed

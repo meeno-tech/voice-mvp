@@ -11,14 +11,11 @@ interface ParticipantCircleProps {
   isAI?: boolean;
 }
 
-const BAR_COUNT = 4;
-const BASE_DURATION = 1600; // Slower for more natural wave
+const BAR_COUNT = 5;
+const BASE_DURATION = 1600; // Adjusted duration for more natural wave
 const MIN_HEIGHT = 14;
 const MAX_HEIGHT = 54;
 const CENTER_OFFSET = 27; // Half of MAX_HEIGHT to center the bars
-
-// Use the built-in sine easing function for a smoother wave effect
-const sineWaveEasing = Easing.inOut(Easing.sin);
 
 const ParticipantCircle: React.FC<ParticipantCircleProps> = ({
   label,
@@ -33,69 +30,70 @@ const ParticipantCircle: React.FC<ParticipantCircleProps> = ({
       .map(() => new Animated.Value(0))
   ).current;
 
-  const isMounted = useRef(false);
+  const cycleAnimations = useRef<Animated.CompositeAnimation[]>([]);
 
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
+  const createContinuousWaveAnimation = (value: Animated.Value) => {
+    // Create a continuous animation that loops smoothly with full extension
+    return Animated.loop(
+      Animated.sequence([
+        Animated.timing(value, {
+          toValue: 1,
+          duration: BASE_DURATION,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+        Animated.timing(value, {
+          toValue: 0,
+          duration: BASE_DURATION,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+      ])
+    );
+  };
 
   useEffect(() => {
     if (isSpeaking) {
-      const createSineWaveAnimation = (value: Animated.Value, index: number) => {
-        // Create phase offset for each bar to create wave effect
-        const phaseOffset = (index / BAR_COUNT) * Math.PI;
-        const adjustedDuration = BASE_DURATION + phaseOffset * 100; // Adjust duration based on phase
+      // Stop any existing animations
+      cycleAnimations.current.forEach((anim) => anim.stop());
+      cycleAnimations.current = [];
 
-        return Animated.sequence([
-          Animated.timing(value, {
-            toValue: 1,
-            duration: adjustedDuration,
-            easing: (t) => {
-              // Apply phase offset to create wave effect
-              return sineWaveEasing(Math.sin(t * Math.PI + phaseOffset));
-            },
-            useNativeDriver: false,
-          }),
-          Animated.timing(value, {
-            toValue: 0,
-            duration: adjustedDuration,
-            easing: (t) => {
-              // Apply phase offset to create wave effect
-              return sineWaveEasing(Math.sin(t * Math.PI + phaseOffset));
-            },
-            useNativeDriver: false,
-          }),
-        ]);
-      };
-
-      // Create and start animations for each bar
+      // Stagger the start of animations slightly
       const animations = animationValues.map((value, index) => {
-        const delay = index * (BASE_DURATION / BAR_COUNT / 2);
-        return Animated.sequence([
-          Animated.delay(delay),
-          Animated.loop(createSineWaveAnimation(value, index)),
-        ]);
+        const animation = createContinuousWaveAnimation(value);
+
+        // Add a small delay for each subsequent bar
+        setTimeout(() => {
+          animation.start();
+        }, index * 100);
+
+        return animation;
       });
 
-      animations.forEach((anim) => anim.start());
+      cycleAnimations.current = animations;
 
       return () => {
         animations.forEach((anim) => anim.stop());
         animationValues.forEach((value) => value.setValue(0));
       };
     } else {
-      // Reset to base state when not speaking
-      animationValues.forEach((value) => {
-        Animated.timing(value, {
-          toValue: 0,
-          duration: 400,
-          easing: sineWaveEasing,
-          useNativeDriver: false,
-        }).start();
+      // Stop and reset animations when not speaking
+      cycleAnimations.current.forEach((anim) => anim.stop());
+
+      // Animate reset with a slight stagger
+      animationValues.forEach((value, index) => {
+        setTimeout(() => {
+          Animated.timing(value, {
+            toValue: 0,
+            duration: 400,
+            easing: Easing.linear,
+            useNativeDriver: false,
+          }).start();
+        }, index * 50);
       });
+
+      // Clear animations
+      cycleAnimations.current = [];
     }
   }, [isSpeaking]);
 
@@ -108,15 +106,10 @@ const ParticipantCircle: React.FC<ParticipantCircleProps> = ({
   };
 
   const getBarOpacity = (index: number, isAI: boolean, animationValue: Animated.Value) => {
-    // Define base opacities for AI and user
-    const baseOpacities = isAI
-      ? [0.15, 0.2, 0.5, 0.15] // AI base opacities
-      : [0.5, 1, 0.5, 0.25]; // User base opacities
-
-    // Interpolate the opacity to cycle through the bars
+    // More dynamic opacity based on bar height
     return animationValue.interpolate({
-      inputRange: [0, 1],
-      outputRange: [baseOpacities[index], baseOpacities[(index + 1) % BAR_COUNT]],
+      inputRange: [0, 0.5, 1],
+      outputRange: [0.3, 1, 0.3],
       extrapolate: 'clamp',
     });
   };
@@ -125,16 +118,16 @@ const ParticipantCircle: React.FC<ParticipantCircleProps> = ({
     <View style={[styles.circleContainer, { opacity }]}>
       <View style={[styles.circle, !isActive && styles.circleInactive]}>
         <View style={styles.voiceBarsContainer}>
-          {animationValues.map((_, index) => (
+          {animationValues.map((animValue, index) => (
             <Animated.View
               key={index}
               style={[
                 styles.voiceBar,
                 {
                   height: getBarHeight(index),
-                  opacity: getBarOpacity(index, isAI, animationValues[index]),
+                  opacity: getBarOpacity(index, isAI, animValue),
                   backgroundColor: isAI ? '#FF2D55' : '#007AFF',
-                  transform: [{ translateY: -CENTER_OFFSET }], // Center the bars
+                  transform: [{ translateY: -CENTER_OFFSET }],
                 },
               ]}
             />
@@ -195,7 +188,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // padding: 20,
   },
   participantsContainer: {
     flexDirection: 'row',
@@ -215,7 +207,7 @@ const styles = StyleSheet.create({
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 55, // Add padding to offset the top bias needed
+    paddingTop: 55,
     ...Platform.select({
       ios: {
         shadowColor: '#000',

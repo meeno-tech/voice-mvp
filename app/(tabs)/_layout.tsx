@@ -3,10 +3,11 @@ import { HapticTab } from 'components/HapticTab';
 import { IconSymbol } from 'components/ui/IconSymbol';
 import TabBarBackground from 'components/ui/TabBarBackground';
 import { Colors } from 'constants/Colors';
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import { useBottomTabOverflow } from 'hooks/useBottomTabOverflow';
 import { useColorScheme } from 'hooks/useColorScheme';
 import { Platform, View } from 'react-native';
+import { mockScenes } from 'types/scenes';
 
 type IconName = React.ComponentProps<typeof IconSymbol>['name'];
 
@@ -14,6 +15,12 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
   const bottomOverflow = useBottomTabOverflow();
+  const pathname = usePathname();
+
+  // Check if we're in a scene route by matching against known room names
+  const isInScene = mockScenes.some((scene) =>
+    pathname.toLowerCase().includes(`/${scene.roomName.toLowerCase()}`)
+  );
 
   const renderTabIcon = (iconName: IconName, color: string, focused: boolean) => (
     <View style={{ alignItems: 'center' }}>
@@ -43,12 +50,14 @@ export default function TabLayout() {
           headerShown: false,
           tabBarButton: HapticTab,
           tabBarBackground: () => <TabBarBackground />,
+          // Hide the tab bar when in a scene
           tabBarStyle: {
             position: 'absolute',
             height: bottomOverflow,
             backgroundColor: 'transparent',
             borderTopWidth: 0,
             elevation: 0,
+            display: isInScene ? 'none' : 'flex',
             ...Platform.select({
               web: {
                 height: 70,

@@ -23,6 +23,10 @@ const MAPPING = {
   'person.crop.circle.fill': 'person',
   'g.circle.fill': 'golf-course',
   'apple.logo': 'apple',
+  'xmark.circle.fill': 'cancel',
+  'xmark.circle': 'cancel',
+  xmark: 'cancel',
+  'xmark.square.fill': 'cancel',
 } as Partial<
   Record<
     import('expo-symbols').SymbolViewProps['name'],

@@ -1,18 +1,16 @@
 import { LiveKitRoom, RoomAudioRenderer, useRoomContext } from '@livekit/components-react';
 import { CallExperience } from 'components/CallExperience';
 import { CountdownTimer } from 'components/CountdownTimer';
+import { SceneInstructions } from 'components/scenes/SceneInstructions';
 import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
-import { IconSymbol } from 'components/ui/IconSymbol';
 import { Colors } from 'constants/Colors';
 import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import { useColorScheme } from 'hooks/useColorScheme';
 import { Room } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Scene, mockScenes } from 'types/scenes';
 import { generateUniqueRoomName, getBaseRoomName } from 'utils/roomUtils';
 
@@ -20,9 +18,6 @@ export default function RoomScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const theme = colorScheme ?? 'light';
   const roomRef = useRef<Room | null>(null);
   const cleanupInProgressRef = useRef(false);
   const mountedRef = useRef(false);
@@ -36,15 +31,7 @@ export default function RoomScreen() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Force component remounting on navigation
   useEffect(() => {
-    // This will force the component to remount
-    // by setting a unique key based on the timestamp
-
-    // NOTE: Why do this? Because the /lk-token endpoint wasn't firing and
-    // we need to get this working asap
-
-    // TODO: Remove this workaround.
     if (mountedRef.current) {
       const timestamp = Date.now();
       router.replace(`${pathname}?t=${timestamp}`);
@@ -98,7 +85,6 @@ export default function RoomScreen() {
 
       if (foundScene) {
         setScene(foundScene);
-        // Generate unique room name for this instance
         const uniqueRoomId = generateUniqueRoomName(foundScene.roomName);
         setUniqueRoomName(uniqueRoomId);
         console.log('Generated unique room:', {
@@ -185,17 +171,31 @@ export default function RoomScreen() {
 
     return (
       <View style={styles.content}>
-        <CountdownTimer duration={240} />
-        <CallExperience />
-        <View style={styles.sceneInfo}>
+        <View style={styles.topContainer}>
           <ThemedText type="title" style={styles.title}>
             {scene?.title}
           </ThemedText>
-          <ThemedText style={styles.description}>{scene?.description}</ThemedText>
+          <View style={styles.timerContainer}>
+            <CountdownTimer duration={180} />
+          </View>
+          <View style={styles.speechContainer}>
+            <CallExperience />
+          </View>
+          <View style={styles.instructionsContainer}>
+            {scene && <SceneInstructions scene={scene} />}
+          </View>
         </View>
       </View>
     );
   };
+
+  const ExitButton = () => (
+    <TouchableOpacity style={styles.exitButton} onPress={handleDisconnect}>
+      <ThemedText style={styles.exitX} lightColor="#FFFFFF" darkColor="#FFFFFF">
+        ✕
+      </ThemedText>
+    </TouchableOpacity>
+  );
 
   if (!scene) {
     return (
@@ -219,16 +219,6 @@ export default function RoomScreen() {
         style={StyleSheet.absoluteFill}
         locations={[0, 0.9]}
       />
-      <View
-        style={[
-          styles.header,
-          { paddingTop: insets.top + Platform.select({ web: 20, default: 10 }) },
-        ]}>
-        <TouchableOpacity onPress={handleDisconnect} style={styles.backButton}>
-          <IconSymbol name="chevron.left" size={24} color={Colors[theme].text} />
-          <ThemedText style={styles.backButtonText}>Back</ThemedText>
-        </TouchableOpacity>
-      </View>
 
       {error && (
         <View style={styles.errorContainer}>
@@ -248,6 +238,7 @@ export default function RoomScreen() {
           onConnected={() => console.log('Connected to room:', uniqueRoomName)}>
           <RoomContent />
           <RoomAudioRenderer />
+          <ExitButton />
         </LiveKitRoom>
       ) : (
         <View style={styles.loading}>
@@ -262,43 +253,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-    zIndex: 1,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: Colors.light.text,
-  },
   content: {
     flex: 1,
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingTop: Platform.select({ web: 40, default: 20 }),
     zIndex: 1,
   },
-  sceneInfo: {
+  topContainer: {
+    width: '100%',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'web' ? 40 : 20,
   },
   title: {
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 24,
     color: Colors.light.text,
+    fontWeight: '600',
+    fontSize: Platform.select({ web: 32, default: 28 }),
   },
-  description: {
-    textAlign: 'center',
-    opacity: 0.8,
-    maxWidth: 600,
+  timerContainer: {
     marginBottom: 12,
-    color: Colors.light.text,
+  },
+  speechContainer: {
+    marginBottom: 16,
+  },
+  instructionsContainer: {
+    width: '100%',
+    paddingHorizontal: Platform.select({ web: 24, default: 16 }),
   },
   loading: {
     flex: 1,
@@ -314,6 +294,31 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  exitButton: {
+    position: 'absolute',
+    bottom: Platform.select({ web: 40, default: 30 }),
+    left: '50%',
+    transform: Platform.select({
+      web: [{ translateX: -35 }],
+      default: [{ translateX: -35 }],
+    }),
+    width: 52,
+    height: 64,
+    borderRadius: 100,
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+      },
+    }),
+  },
+  exitX: {
+    fontSize: 28,
+    fontWeight: '700',
     textAlign: 'center',
   },
 });

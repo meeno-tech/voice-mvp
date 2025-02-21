@@ -87,6 +87,14 @@ export default function HomeScreen() {
     });
   }, []);
 
+  useEffect(() => {
+    mixpanel.track('Home Page Viewed', {
+      user_logged_in: !!user,
+      platform: Platform.OS,
+      timestamp: new Date().toISOString(),
+    });
+  }, []);
+
   const handleScenePress = useCallback(
     (scene: Scene) => {
       if (scene.isLocked) {

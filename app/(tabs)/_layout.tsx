@@ -117,13 +117,6 @@ export default function TabLayout() {
               renderTabIcon('person.crop.circle.fill', color, focused),
           }}
         />
-        <Tabs.Screen
-          name="[room]"
-          options={{
-            href: null, // Hide from tab bar
-            headerShown: false,
-          }}
-        />
       </Tabs>
     </>
   );

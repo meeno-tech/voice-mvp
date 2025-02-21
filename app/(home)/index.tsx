@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { Scene, mockScenes } from 'types/scenes';
 import { supabase } from 'utils/supabase';
+import * as Share from 'expo-sharing';
 
 export default function HomeScreen() {
   const { user, signOut } = useAuth();
@@ -141,14 +142,33 @@ export default function HomeScreen() {
             source={{ uri: brandImageUrl }}
             className="h-[31px] w-[130px] justify-end"
             resizeMode="contain"></ImageBackground>
-          <TouchableOpacity onPress={() => setDropdownVisible((prev) => !prev)}>
-            <Ionicons
-              name="person-circle-outline"
-              size={44}
-              color="black"
-              style={{ opacity: 0.2 }}
-            />
-          </TouchableOpacity>
+          <View className="flex-row items-center space-x-4">
+            <TouchableOpacity
+              onPress={async () => {
+                if (await Share.isAvailableAsync()) {
+                  Share.shareAsync('https://be-vokal.com', {
+                    dialogTitle: 'Share Vokal',
+                    mimeType: 'text/plain',
+                    UTI: 'public.plain-text',
+                  });
+                }
+              }}>
+              <Ionicons
+                name="paper-plane-outline"
+                size={40}
+                color="black"
+                style={{ opacity: 0.2 }}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setDropdownVisible((prev) => !prev)}>
+              <Ionicons
+                name="person-circle-outline"
+                size={44}
+                color="black"
+                style={{ opacity: 0.2 }}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
         {dropdownVisible && (
           <View className="absolute right-4 top-[4.5rem] rounded-md bg-white shadow-lg">

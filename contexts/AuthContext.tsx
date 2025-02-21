@@ -1,8 +1,8 @@
 // contexts/AuthContext.tsx
-import { supabase } from 'utils/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { mixpanel } from 'utils/mixpanel';
+import { supabase } from 'utils/supabase';
 
 interface AuthContextType {
   session: Session | null;
@@ -99,27 +99,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
     loading,
     signIn: {
       email: async (email: string, password: string) => {
-        try {
-          const { data: { user }, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        if (user) {
+          mixpanel.identify(user.id);
+          mixpanel.setUserProperties({
+            auth_method: 'email',
+            signed_up_at: user.created_at,
           });
-          
-          if (error) throw error;
-          
-          if (user) {
-            mixpanel.identify(user.id);
-            mixpanel.setUserProperties({
-              email: user.email,
-              auth_method: 'email',
-              signed_up_at: user.created_at,
-            });
-            mixpanel.track('Sign In', { method: 'email' });
-          }
-          
-          return { user, error: null };
-        } catch (error) {
-          return { user: null, error };
+          mixpanel.track('Sign In', { method: 'email' });
         }
       },
       google: async () => {

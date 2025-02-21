@@ -3,6 +3,7 @@ import { AuthModal } from 'components/auth/AuthModal';
 import VokalSceneCard from 'components/scenes/VokalSceneCard';
 import { useAuth } from 'contexts/AuthContext';
 import { useRouter } from 'expo-router';
+import * as Share from 'expo-sharing';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -17,7 +18,6 @@ import {
 } from 'react-native';
 import { Scene, mockScenes } from 'types/scenes';
 import { supabase } from 'utils/supabase';
-import * as Share from 'expo-sharing';
 
 export default function HomeScreen() {
   const { user, signOut } = useAuth();
@@ -67,11 +67,11 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    const desktopCardWidth = 288;
-    const desktopCardHeight = 384;
+    const desktopCardWidth = 340;
+    const desktopCardHeight = 460;
     const screenWidth = Dimensions.get('window').width;
     const screenHeight = Dimensions.get('window').height;
-    const idealWidth = screenWidth - 76;
+    const idealWidth = screenWidth - 40;
     const idealHeight = screenHeight * 0.8;
     const aspectRatio = 9 / 16;
     const heightFromWidth = idealWidth / aspectRatio;
@@ -134,10 +134,10 @@ export default function HomeScreen() {
   ]);
 
   return (
-    <View className="flex min-h-screen flex-1 flex-col bg-white">
+    <View className="pt-safe flex flex-1 flex-col bg-white">
       {/* Header */}
-      <View className="relative z-50">
-        <View className="flex-row items-center justify-between px-4 pt-2 md:px-16 md:py-4">
+      <View className="relative z-40 m-4">
+        <View className="flex-row items-center justify-between pl-2 md:px-16 md:py-6">
           <ImageBackground
             source={{ uri: brandImageUrl }}
             className="h-[31px] w-[130px] justify-end"
@@ -159,7 +159,7 @@ export default function HomeScreen() {
               }}>
               <Ionicons
                 name="paper-plane-outline"
-                size={40}
+                size={32}
                 color="black"
                 style={{ opacity: 0.2 }}
               />
@@ -167,7 +167,7 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={() => setDropdownVisible((prev) => !prev)}>
               <Ionicons
                 name="person-circle-outline"
-                size={44}
+                size={36}
                 color="black"
                 style={{ opacity: 0.2 }}
               />
@@ -175,7 +175,7 @@ export default function HomeScreen() {
           </View>
         </View>
         {dropdownVisible && (
-          <View className="absolute right-4 top-[4.5rem] rounded-md bg-white shadow-lg">
+          <View className="absolute right-0 top-[3rem] z-50 rounded-md bg-white shadow-lg">
             {user ? (
               <TouchableOpacity
                 className="flex-row items-center space-x-2 px-4 py-3"
@@ -194,7 +194,10 @@ export default function HomeScreen() {
           </View>
         )}
       </View>
-      <View className="flex-1">
+
+      {/* Main Content */}
+      <View className="pb-safe flex-1">
+        {/* Mobile Carousel */}
         <View className="w-full md:hidden">
           <FlatList
             className="pt-2"
@@ -202,7 +205,8 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             data={mockScenes}
             contentContainerStyle={{
-              paddingHorizontal: 16,
+              paddingHorizontal: 20,
+              paddingBottom: 6,
             }}
             ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
             keyExtractor={(item) => item.id}
@@ -221,7 +225,7 @@ export default function HomeScreen() {
             viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
           />
           {/* Page Indicator */}
-          <View className="flex-row items-center justify-center py-4">
+          <View className="flex-row items-center justify-center">
             {mockScenes.map((_, i) => (
               <View
                 key={i}
@@ -231,15 +235,15 @@ export default function HomeScreen() {
               />
             ))}
           </View>
-          <View className="items-center justify-center py-1">
-            <Text className="text-sm font-medium text-gray-500">{timeLeft}</Text>
+          <View className="mt-2 items-center justify-center">
+            <Text className="text-sm font-bold text-gray-500">{timeLeft}</Text>
           </View>
         </View>
 
-        {/* Grid layout for md and above */}
-        <View className="hidden scroll-p-4 overflow-auto md:flex md:flex-1">
-          <View className="mx-auto w-full max-w-[672px] p-0 lg:max-w-[1008px]">
-            <View className="grid grid-cols-2 gap-8 px-4 sm:px-0 lg:grid-cols-3">
+        {/* Desktop Grid */}
+        <View className="pb-safe hidden scroll-p-4 overflow-auto md:flex md:flex-1">
+          <View className="mx-auto w-full max-w-[960px] p-0 lg:max-w-[1440px]">
+            <View className="grid grid-cols-2 gap-6 px-4 pt-4 sm:px-0 lg:grid-cols-3">
               {mockScenes.map((scene) => (
                 <VokalSceneCard
                   key={scene.id}
@@ -252,16 +256,16 @@ export default function HomeScreen() {
             </View>
           </View>
           <View className="items-center justify-center py-4">
-            <Text className="text-lg font-medium text-gray-500">{timeLeft}</Text>
+            <Text className="text-lg text-gray-500">{timeLeft}</Text>
           </View>
         </View>
       </View>
 
-      {/* Footer */}
-      <View className="flex h-[40px] justify-center bg-transparent px-6 md:px-16">
+      {/* Footer - Added safe padding to account for Safari's bottom bar */}
+      <View className="pb-safe bg-transparent p-1 md:px-16">
         <View className="flex-row items-center justify-between">
-          <Text className="text-[10px] text-gray-400">© 2024 Vokal</Text>
-          <View className="flex-row space-x-4">
+          <Text className="text-[10px] text-gray-400">© 2025 Vokal</Text>
+          <View className="flex-row space-x-2">
             <TouchableOpacity onPress={handlePrivacyPress}>
               <Text className="text-[10px] text-gray-400">Privacy</Text>
             </TouchableOpacity>

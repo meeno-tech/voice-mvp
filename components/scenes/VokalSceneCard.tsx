@@ -45,7 +45,7 @@ export default function VokalSceneCard({
               style={{ fontFamily: 'DelaGothicOne' }}>
               {scene.title.toUpperCase()}
             </Text>
-            <Text className="px-2 text-center text-base text-white/90">{scene.description}</Text>
+            <Text className="text-center text-[12px] text-white/90">{scene.description}</Text>
             {scene.isLocked ? (
               <View className="mt-4 flex-row items-center justify-center rounded-full bg-white py-3">
                 <Ionicons name="lock-closed" size={20} color="black" />

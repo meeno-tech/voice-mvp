@@ -8,12 +8,15 @@ import {
   Animated,
   Dimensions,
   FlatList,
+  ImageBackground,
   Platform,
   Text,
   TouchableOpacity,
   View,
+  ViewToken,
 } from 'react-native';
 import { Scene, mockScenes } from 'types/scenes';
+import { supabase } from 'utils/supabase';
 
 export default function HomeScreen() {
   const { user, signOut } = useAuth();
@@ -22,6 +25,12 @@ export default function HomeScreen() {
   const router = useRouter();
   const scrollX = useRef(new Animated.Value(0)).current;
   const [timeLeft, setTimeLeft] = useState('');
+  const [index, setIndex] = useState(0);
+  const [brandImageUrl, setBrandImageUrl] = useState('');
+  const [cardDimensions, setCardDimensions] = useState({
+    cardWidth: 288,
+    cardHeight: 384,
+  });
 
   useEffect(() => {
     const targetDate = new Date('2025-02-23T11:30:00Z');
@@ -47,6 +56,24 @@ export default function HomeScreen() {
     const timer = setInterval(updateTimer, 1000);
 
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const { data } = supabase.storage.from('app_assets').getPublicUrl('vokal-brand.webp');
+    setBrandImageUrl(data.publicUrl);
+  }, []);
+
+  useEffect(() => {
+    const desktopCardHeight = 384;
+    const screenWidth = Dimensions.get('window').width;
+    const screenHeight = Dimensions.get('window').height;
+    const idealWidth = screenWidth - 76;
+    const idealHeight = screenHeight * 0.8;
+    const aspectRatio = 9 / 16;
+    const heightFromWidth = idealWidth / aspectRatio;
+    const cardHeight = Math.max(desktopCardHeight, Math.min(heightFromWidth, idealHeight));
+    const cardWidth = cardHeight * aspectRatio;
+    setCardDimensions({ cardWidth, cardHeight });
   }, []);
 
   const handleScenePress = useCallback((scene: Scene) => {
@@ -83,39 +110,28 @@ export default function HomeScreen() {
     }
   }, [router]);
 
-  // Get window width for dynamic card sizing
-  const windowWidth = Dimensions.get('window').width;
-
-  // Mobile card sizing
-  const mobilePadding = 28; // Total horizontal padding
-  const cardWidthMobile = Math.min(319, windowWidth - mobilePadding);
-  const cardHeightMobile = cardWidthMobile * (510 / 319);
-
-  // Desktop card sizing - use the same 319px width as mobile but allow more cards
-  const cardWidthDesktop = 319;
-  const cardHeightDesktop = 510;
-
-  const renderTimer = () => (
-    <Text
-      style={{
-        fontSize: 14,
-        lineHeight: 19,
-        fontWeight: '500',
-        letterSpacing: 0.2,
-        textAlign: 'center',
-        color: '#999999',
-        marginBottom: 16,
-      }}>
-      {timeLeft}
-    </Text>
-  );
+  const viewabilityConfigCallbackPairs = useRef([
+    {
+      viewabilityConfig: {
+        viewAreaCoveragePercentThreshold: 50,
+      },
+      onViewableItemsChanged: ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+        if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+          setIndex(viewableItems[0].index);
+        }
+      },
+    },
+  ]);
 
   return (
     <View className="flex min-h-screen flex-1 flex-col bg-white">
       {/* Header */}
       <View className="relative z-50">
-        <View className="flex-row items-center justify-between px-8 pt-4 md:px-16">
-          <Text className="font-sans text-5xl font-bold text-black">Vokal</Text>
+        <View className="flex-row items-center justify-between px-4 pt-2 md:px-16 md:py-4">
+          <ImageBackground
+            source={{ uri: brandImageUrl }}
+            className="h-[31px] w-[130px] justify-end"
+            resizeMode="contain"></ImageBackground>
           <TouchableOpacity onPress={() => setDropdownVisible((prev) => !prev)}>
             <Ionicons
               name="person-circle-outline"
@@ -125,7 +141,6 @@ export default function HomeScreen() {
             />
           </TouchableOpacity>
         </View>
-        {/* User dropdown menu */}
         {dropdownVisible && (
           <View className="absolute right-4 top-[4.5rem] rounded-md bg-white shadow-lg">
             {user ? (
@@ -146,17 +161,15 @@ export default function HomeScreen() {
           </View>
         )}
       </View>
-
       <View className="flex-1">
-        {/* Mobile Layout */}
         <View className="w-full md:hidden">
           <FlatList
-            className="py-2"
+            className="pt-2"
             horizontal
             showsHorizontalScrollIndicator={false}
             data={mockScenes}
             contentContainerStyle={{
-              paddingHorizontal: 24,
+              paddingHorizontal: 16,
             }}
             ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
             keyExtractor={(item) => item.id}
@@ -165,32 +178,48 @@ export default function HomeScreen() {
                 key={item.id}
                 scene={item}
                 onPress={() => handleScenePress(item)}
-                cardWidth={cardWidthMobile}
-                cardHeight={cardHeightMobile}
+                cardWidth={cardDimensions.cardWidth}
+                cardHeight={cardDimensions.cardHeight}
               />
             )}
             onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
               useNativeDriver: false,
             })}
+            viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
           />
-          {renderTimer()}
+          {/* Page Indicator */}
+          <View className="flex-row items-center justify-center py-4">
+            {mockScenes.map((_, i) => (
+              <View
+                key={i}
+                className={`mx-1 h-2 w-2 rounded-full transition-all ${
+                  i === index ? 'w-4 bg-gray-500' : 'bg-gray-300'
+                }`}
+              />
+            ))}
+          </View>
+          <View className="items-center justify-center py-1">
+            <Text className="text-sm font-medium text-gray-500">{timeLeft}</Text>
+          </View>
         </View>
 
-        {/* Desktop Layout */}
+        {/* Grid layout for md and above */}
         <View className="hidden scroll-p-4 overflow-auto md:flex md:flex-1">
-          <View className="mx-auto w-full max-w-[800px] p-0 lg:max-w-[1200px]">
-            <View className="grid grid-cols-2 px-4 sm:px-0 lg:grid-cols-3">
+          <View className="mx-auto w-full max-w-[672px] p-0 lg:max-w-[1008px]">
+            <View className="grid grid-cols-2 gap-8 px-4 sm:px-0 lg:grid-cols-3">
               {mockScenes.map((scene) => (
                 <VokalSceneCard
                   key={scene.id}
                   scene={scene}
                   onPress={() => handleScenePress(scene)}
-                  cardWidth={cardWidthDesktop}
-                  cardHeight={cardHeightDesktop}
+                  cardWidth={cardDimensions.cardWidth}
+                  cardHeight={cardDimensions.cardHeight}
                 />
               ))}
             </View>
-            {renderTimer()}
+          </View>
+          <View className="items-center justify-center py-4">
+            <Text className="text-lg font-medium text-gray-500">{timeLeft}</Text>
           </View>
         </View>
       </View>
@@ -209,7 +238,6 @@ export default function HomeScreen() {
           </View>
         </View>
       </View>
-
       <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </View>
   );

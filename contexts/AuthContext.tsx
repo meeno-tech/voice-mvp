@@ -1,6 +1,7 @@
 // contexts/AuthContext.tsx
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { mixpanel } from 'utils/mixpanel';
 import { supabase } from 'utils/supabase';
 
@@ -149,9 +150,25 @@ export function AuthProvider({ children }: PropsWithChildren) {
         if (error) throw error;
         if (!data.user) throw new Error('Sign up successful but no user returned');
 
+        // Track successful sign up with non-sensitive data
+        mixpanel.track('Sign Up', {
+          auth_method: 'email',
+          timestamp: new Date().toISOString(),
+          platform: Platform.OS,
+          success: true,
+        });
+
         console.log('Sign up successful - confirmation email sent to:', data.user.email);
         alert('Please check your email to confirm your account before signing in.');
       } catch (error) {
+        // Track failed sign up attempt (without sensitive info)
+        mixpanel.track('Sign Up Failed', {
+          auth_method: 'email',
+          timestamp: new Date().toISOString(),
+          platform: Platform.OS,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+
         console.error('Sign up process failed:', error);
         throw error;
       }

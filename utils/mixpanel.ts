@@ -1,8 +1,7 @@
 import { Mixpanel } from 'mixpanel-react-native';
 import { Platform } from 'react-native';
 
-// Initialize with your project token
-const MIXPANEL_TOKEN = process.env.MIXPANEL_TOKEN || 'your_token_here';
+const MIXPANEL_TOKEN = process.env.MIXPANEL_TOKEN || 'noop';
 
 interface MixpanelProperties {
   [key: string]: string | number | boolean | null;

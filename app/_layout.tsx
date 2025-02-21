@@ -13,10 +13,13 @@ Sentry.init({
 });
 
 function RootLayout() {
-  useFonts({
+  const fontsToLoad = {
+    'Dela-Gothic': require('../assets/fonts/DelaGothicOne-Regular.ttf'),
     BarlowCondensed: require('../assets/fonts/BarlowCondensed-Regular.ttf'),
     Inter: require('../assets/fonts/Inter-V.ttf'),
-  });
+  };
+
+  useFonts(fontsToLoad);
 
   return (
     <AuthProvider>

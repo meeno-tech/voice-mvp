@@ -8,8 +8,17 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-        title: ['DelaGothicOne', 'serif'], // title of scenes and basically nothing else
+        title: ['Dela-Gothic', 'serif'], // title of scenes and basically nothing else
         display: ['BarlowCondensed', 'sans-serif'],
+      },
+      zIndex: {
+        1: '1',
+      },
+      colors: {
+        error: '#FFB7B7',
+      },
+      backgroundColor: {
+        'black-12': 'rgba(0, 0, 0, 0.12)',
       },
     },
   },

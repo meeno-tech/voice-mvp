@@ -4,13 +4,12 @@ import { CountdownTimer } from 'components/CountdownTimer';
 import { SceneInstructions } from 'components/scenes/SceneInstructions';
 import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
-import { Colors } from 'constants/Colors';
 import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { Room } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Platform, TouchableOpacity, View } from 'react-native';
 import { Scene, mockScenes } from 'types/scenes';
 import { generateUniqueRoomName, getBaseRoomName } from 'utils/roomUtils';
 
@@ -170,28 +169,39 @@ export default function RoomScreen() {
     }, [room]);
 
     return (
-      <View style={styles.content}>
-        <View style={styles.topContainer}>
-          <ThemedText type="title" style={styles.title}>
+      <View className="z-1 flex-1 items-center pt-10 md:pt-16">
+        <View className="w-full items-center">
+          <ThemedText
+            type="title"
+            className="mb-3.5 w-4/5 text-center text-2xl font-semibold uppercase text-black md:text-4xl"
+            style={{ fontFamily: 'DelaGothicOne' }}>
             {scene?.title}
           </ThemedText>
-          <View style={styles.timerContainer}>
+          <View className="mb-6">
             <CountdownTimer duration={180} />
           </View>
-          <View style={styles.speechContainer}>
+          <View className="mb-4">
             <CallExperience />
           </View>
-          <View style={styles.instructionsContainer}>
-            {scene && <SceneInstructions scene={scene} />}
-          </View>
+          <View className="w-full">{scene && <SceneInstructions scene={scene} />}</View>
         </View>
       </View>
     );
   };
 
   const ExitButton = () => (
-    <TouchableOpacity style={styles.exitButton} onPress={handleDisconnect}>
-      <ThemedText style={styles.exitX} lightColor="#FFFFFF" darkColor="#FFFFFF">
+    <TouchableOpacity
+      className={`
+        bg-black-12 absolute bottom-8 left-1/2 h-16
+        w-[72px] -translate-x-[35px] items-center justify-center 
+        rounded-full md:bottom-10
+        ${Platform.OS === 'web' ? 'cursor-pointer' : ''}
+      `}
+      onPress={handleDisconnect}>
+      <ThemedText
+        className="text-center text-2xl font-bold text-white"
+        lightColor="#FFFFFF"
+        darkColor="#FFFFFF">
         ✕
       </ThemedText>
     </TouchableOpacity>
@@ -199,13 +209,13 @@ export default function RoomScreen() {
 
   if (!scene) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView className="flex-1">
         <LinearGradient
           colors={['#E7DFE2', '#E7DFE2', '#FD4C18']}
-          style={StyleSheet.absoluteFill}
+          className="absolute inset-0"
           locations={[0, 0.6, 1]}
         />
-        <View style={styles.loading}>
+        <View className="flex-1 items-center justify-center">
           <ThemedText>{error || 'Loading scene...'}</ThemedText>
         </View>
       </ThemedView>
@@ -213,16 +223,16 @@ export default function RoomScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView className="flex-1">
       <LinearGradient
         colors={['#E7DFE2', '#E7DFE2', '#FD4C18']}
-        style={StyleSheet.absoluteFill}
+        className="absolute inset-0"
         locations={[0, 0.6, 1]}
       />
 
       {error && (
-        <View style={styles.errorContainer}>
-          <ThemedText style={styles.errorText}>{error}</ThemedText>
+        <View className="bg-error z-1 mx-5 rounded-lg px-4 py-4">
+          <ThemedText className="text-center text-white">{error}</ThemedText>
         </View>
       )}
 
@@ -241,86 +251,10 @@ export default function RoomScreen() {
           <ExitButton />
         </LiveKitRoom>
       ) : (
-        <View style={styles.loading}>
+        <View className="flex-1 items-center justify-center">
           <ThemedText>{isConnecting ? 'Connecting to scene...' : 'Initializing...'}</ThemedText>
         </View>
       )}
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    paddingTop: Platform.select({ web: 40, default: 20 }),
-    zIndex: 1,
-  },
-  topContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  title: {
-    textAlign: 'center',
-    marginBottom: 14,
-    color: Colors.light.text,
-    fontWeight: '600',
-    fontSize: Platform.select({ web: 36, default: 28 }),
-    fontFamily: 'DelaGothicOne',
-    width: '80%',
-    textTransform: 'uppercase',
-  },
-  timerContainer: {
-    marginBottom: 24,
-  },
-  speechContainer: {
-    marginBottom: 16,
-  },
-  instructionsContainer: {
-    width: '100%',
-  },
-  loading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    padding: 16,
-    backgroundColor: Colors.light.error,
-    marginHorizontal: 20,
-    borderRadius: 8,
-    zIndex: 1,
-  },
-  errorText: {
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  exitButton: {
-    position: 'absolute',
-    bottom: Platform.select({ web: 40, default: 30 }),
-    left: '50%',
-    transform: Platform.select({
-      web: [{ translateX: -35 }],
-      default: [{ translateX: -35 }],
-    }),
-    width: 72,
-    height: 64,
-    borderRadius: 100,
-    backgroundColor: 'rgba(0, 0, 0, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      web: {
-        cursor: 'pointer',
-      },
-    }),
-  },
-  exitX: {
-    fontSize: 28,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-});

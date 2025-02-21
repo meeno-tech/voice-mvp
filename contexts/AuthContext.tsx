@@ -1,7 +1,9 @@
 // contexts/AuthContext.tsx
-import { supabase } from 'utils/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+import { mixpanel } from 'utils/mixpanel';
+import { supabase } from 'utils/supabase';
 
 interface AuthContextType {
   session: Session | null;
@@ -98,16 +100,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
     loading,
     signIn: {
       email: async (email: string, password: string) => {
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        if (user) {
+          mixpanel.identify(user.id);
+          mixpanel.setUserProperties({
+            auth_method: 'email',
+            signed_up_at: user.created_at,
           });
-          if (error) throw error;
-          console.log('Sign in successful:', data.user?.email);
-        } catch (error) {
-          console.error('Sign in error:', error);
-          throw error;
+          mixpanel.track('Sign In', { method: 'email' });
         }
       },
       google: async () => {
@@ -141,24 +150,36 @@ export function AuthProvider({ children }: PropsWithChildren) {
         if (error) throw error;
         if (!data.user) throw new Error('Sign up successful but no user returned');
 
+        // Track successful sign up with non-sensitive data
+        mixpanel.track('Sign Up', {
+          auth_method: 'email',
+          timestamp: new Date().toISOString(),
+          platform: Platform.OS,
+          success: true,
+        });
+
         console.log('Sign up successful - confirmation email sent to:', data.user.email);
         alert('Please check your email to confirm your account before signing in.');
       } catch (error) {
+        // Track failed sign up attempt (without sensitive info)
+        mixpanel.track('Sign Up Failed', {
+          auth_method: 'email',
+          timestamp: new Date().toISOString(),
+          platform: Platform.OS,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+
         console.error('Sign up process failed:', error);
         throw error;
       }
     },
     signOut: async () => {
       try {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-        // Clear local state
-        setSession(null);
-        setUser(null);
-        console.log('Sign out successful');
+        mixpanel.track('Sign Out');
+        mixpanel.reset();
+        await supabase.auth.signOut();
       } catch (error) {
-        console.error('Sign out error:', error);
-        throw error;
+        console.error('Error signing out:', error);
       }
     },
   };

@@ -17,6 +17,7 @@ import {
   ViewToken,
 } from 'react-native';
 import { Scene, mockScenes } from 'types/scenes';
+import { mixpanel } from 'utils/mixpanel';
 import { supabase } from 'utils/supabase';
 
 export default function HomeScreen() {
@@ -86,23 +87,44 @@ export default function HomeScreen() {
     });
   }, []);
 
-  const handleScenePress = useCallback((scene: Scene) => {
-    if (scene.isLocked) {
-      alert('This scene is currently locked.');
-      return;
-    }
-
-    const timestamp = Date.now();
-    const roomPath = `/(home)/${scene.roomName.toLowerCase()}?t=${timestamp}`;
-
-    if (Platform.OS === 'web') {
-      const baseUrl = window.location.origin;
-      const fullPath = `${baseUrl}${roomPath}`;
-      window.location.href = fullPath;
-    } else {
-      router.push(roomPath);
-    }
+  useEffect(() => {
+    mixpanel.track('Home Page Viewed', {
+      user_logged_in: !!user,
+      platform: Platform.OS,
+      timestamp: new Date().toISOString(),
+    });
   }, []);
+
+  const handleScenePress = useCallback(
+    (scene: Scene) => {
+      if (scene.isLocked) {
+        mixpanel.track('Scene Locked Interaction', {
+          scene_id: scene.id,
+          scene_name: scene.title,
+        });
+        alert('This scene is currently locked.');
+        return;
+      }
+
+      mixpanel.track('Scene Started', {
+        scene_id: scene.id,
+        scene_name: scene.title,
+        user_logged_in: !!user,
+      });
+
+      const timestamp = Date.now();
+      const roomPath = `/(home)/${scene.roomName.toLowerCase()}?t=${timestamp}`;
+
+      if (Platform.OS === 'web') {
+        const baseUrl = window.location.origin;
+        const fullPath = `${baseUrl}${roomPath}`;
+        window.location.href = fullPath;
+      } else {
+        router.push(roomPath);
+      }
+    },
+    [user]
+  );
 
   const handlePrivacyPress = useCallback(() => {
     if (Platform.OS === 'web') {
@@ -133,6 +155,26 @@ export default function HomeScreen() {
     },
   ]);
 
+  const handleShare = async () => {
+    if (await Share.isAvailableAsync()) {
+      try {
+        await Share.shareAsync('https://be-vokal.com', {
+          dialogTitle: 'Share Vokal',
+          mimeType: 'text/plain',
+          UTI: 'public.plain-text',
+        });
+        mixpanel.track('App Shared');
+      } catch (error: unknown) {
+        console.error(error);
+        if (error instanceof Error) {
+          mixpanel.track('Share Failed', { error: error.message });
+        } else {
+          mixpanel.track('Share Failed', { error: 'Unknown error occurred' });
+        }
+      }
+    }
+  };
+
   return (
     <View className="pt-safe flex flex-1 flex-col bg-white">
       {/* Header */}
@@ -143,20 +185,7 @@ export default function HomeScreen() {
             className="h-[31px] w-[130px] justify-end"
             resizeMode="contain"></ImageBackground>
           <View className="flex-row items-center space-x-4">
-            <TouchableOpacity
-              onPress={async () => {
-                if (await Share.isAvailableAsync()) {
-                  try {
-                    await Share.shareAsync('https://be-vokal.com', {
-                      dialogTitle: 'Share Vokal',
-                      mimeType: 'text/plain',
-                      UTI: 'public.plain-text',
-                    });
-                  } catch (error) {
-                    console.error(error);
-                  }
-                }
-              }}>
+            <TouchableOpacity onPress={handleShare}>
               <Ionicons
                 name="paper-plane-outline"
                 size={32}

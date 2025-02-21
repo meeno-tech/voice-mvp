@@ -21,7 +21,7 @@ function RootLayout() {
   const [loaded] = useFonts({
     BarlowCondensed: require('../assets/fonts/BarlowCondensed-Regular.ttf'),
     DelaGothicOne: require('../assets/fonts/DelaGothicOne-Regular.ttf'),
-    Inter: require('../assets/fonts/Inter_18pt-Regular.ttf'),
+    Inter: require('../assets/fonts/Inter-V.ttf'),
   });
 
   useEffect(() => {

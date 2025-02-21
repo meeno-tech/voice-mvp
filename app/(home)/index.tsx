@@ -146,11 +146,15 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={async () => {
                 if (await Share.isAvailableAsync()) {
-                  Share.shareAsync('https://be-vokal.com', {
-                    dialogTitle: 'Share Vokal',
-                    mimeType: 'text/plain',
-                    UTI: 'public.plain-text',
-                  });
+                  try {
+                    await Share.shareAsync('https://be-vokal.com', {
+                      dialogTitle: 'Share Vokal',
+                      mimeType: 'text/plain',
+                      UTI: 'public.plain-text',
+                    });
+                  } catch (error) {
+                    console.error(error);
+                  }
                 }
               }}>
               <Ionicons

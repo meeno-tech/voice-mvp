@@ -11,6 +11,7 @@ import { Room } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, TouchableOpacity, View } from 'react-native';
 import { Scene, mockScenes } from 'types/scenes';
+import { mixpanel } from 'utils/mixpanel';
 import { generateUniqueRoomName, getBaseRoomName } from 'utils/roomUtils';
 
 export default function RoomScreen() {
@@ -105,6 +106,12 @@ export default function RoomScreen() {
       setIsConnecting(true);
       setError(null);
 
+      mixpanel.track('Scene Connection Started', {
+        scene_id: scene.id,
+        scene_name: scene.title,
+        room_id: uniqueRoomId,
+      });
+
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const apiUrl = process.env.API_URL;
@@ -135,8 +142,20 @@ export default function RoomScreen() {
         serverUrl: data.serverUrl,
         token: data.participantToken,
       });
-    } catch (error) {
+
+      mixpanel.track('Scene Connection Successful', {
+        scene_id: scene.id,
+        scene_name: scene.title,
+        room_id: uniqueRoomId,
+      });
+    } catch (error: unknown) {
       console.error('Failed to connect to LiveKit:', error);
+      mixpanel.track('Scene Connection Failed', {
+        scene_id: scene.id,
+        scene_name: scene.title,
+        room_id: uniqueRoomId,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      });
       setError('Failed to connect to room');
     } finally {
       setIsConnecting(false);
@@ -145,6 +164,11 @@ export default function RoomScreen() {
 
   const handleDisconnect = async () => {
     try {
+      mixpanel.track('Scene Disconnected', {
+        scene_id: scene?.id ?? null,
+        scene_name: scene?.title ?? null,
+        room_id: uniqueRoomName,
+      });
       await cleanupRoom();
       setConnectionDetails(null);
       router.replace('/(home)');

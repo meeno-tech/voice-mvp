@@ -25,10 +25,12 @@
     "expo-linear-gradient": "^14.0.2",
     "expo-linking": "~7.0.5",
     "expo-router": "~4.0.17",
+    "expo-sharing": "~13.0.1",
     "expo-splash-screen": "~0.29.22",
     "expo-status-bar": "~2.0.1",
     "expo-symbols": "~0.2.2",
     "expo-system-ui": "~4.0.8",
+    "mixpanel-react-native": "^3.0.8",
     "nanoid": "^5.1.0",
     "nativewind": "latest",
     "promise": "^8.3.0",
@@ -42,8 +44,7 @@
     "react-native-url-polyfill": "^2.0.0",
     "react-native-web": "~0.19.13",
     "react-native-webview": "13.12.5",
-    "tailwind-scrollbar-hide": "^2.0.0",
-    "expo-sharing": "~13.0.1"
+    "tailwind-scrollbar-hide": "^2.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

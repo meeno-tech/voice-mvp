@@ -30,6 +30,8 @@ export default function HomeScreen() {
   const [cardDimensions, setCardDimensions] = useState({
     cardWidth: 288,
     cardHeight: 384,
+    desktopCardWidth: 288,
+    desktopCardHeight: 384,
   });
 
   useEffect(() => {
@@ -64,6 +66,7 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
+    const desktopCardWidth = 288;
     const desktopCardHeight = 384;
     const screenWidth = Dimensions.get('window').width;
     const screenHeight = Dimensions.get('window').height;
@@ -73,7 +76,13 @@ export default function HomeScreen() {
     const heightFromWidth = idealWidth / aspectRatio;
     const cardHeight = Math.max(desktopCardHeight, Math.min(heightFromWidth, idealHeight));
     const cardWidth = cardHeight * aspectRatio;
-    setCardDimensions({ cardWidth, cardHeight });
+
+    setCardDimensions({
+      cardWidth,
+      cardHeight,
+      desktopCardWidth,
+      desktopCardHeight,
+    });
   }, []);
 
   const handleScenePress = useCallback((scene: Scene) => {
@@ -212,8 +221,8 @@ export default function HomeScreen() {
                   key={scene.id}
                   scene={scene}
                   onPress={() => handleScenePress(scene)}
-                  cardWidth={cardDimensions.cardWidth}
-                  cardHeight={cardDimensions.cardHeight}
+                  cardWidth={cardDimensions.desktopCardWidth}
+                  cardHeight={cardDimensions.desktopCardHeight}
                 />
               ))}
             </View>

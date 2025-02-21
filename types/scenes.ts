@@ -9,17 +9,19 @@ export interface Scene {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   category: 'social' | 'dating' | 'networking';
   isLocked?: boolean;
+  xpReward?: number;
 }
 
 export const mockScenes: Scene[] = [
   {
     id: '1',
-    title: "Pizza at Lucali's",
-    description: 'The girl behind you in line looks cold, but seems like she wants to talk to you.',
+    title: 'Pizza at Lucali’s',
+    description: 'The girl behind you in line looks cold, and seems like she wants to talk to you',
     roomName: 'NY-snow-pizza',
     difficulty: 'beginner',
     category: 'social',
     imageUrl: 'pizza-scene.jpg',
+    xpReward: 10,
   },
   {
     id: '2',

@@ -272,7 +272,7 @@ export default function HomeScreen() {
         {/* Desktop Grid */}
         <View className="pb-safe hidden scroll-p-4 overflow-auto md:flex md:flex-1">
           <View className="mx-auto w-full max-w-[960px] p-0 lg:max-w-[1440px]">
-            <View className="grid grid-cols-2 gap-6 px-4 pt-4 sm:px-0 lg:grid-cols-3">
+            <View className="grid grid-cols-2 place-items-center gap-6 px-4 pt-4 sm:px-0 lg:grid-cols-3">
               {mockScenes.map((scene) => (
                 <VokalSceneCard
                   key={scene.id}

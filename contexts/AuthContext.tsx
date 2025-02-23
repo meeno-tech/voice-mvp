@@ -1,5 +1,6 @@
 // contexts/AuthContext.tsx
 import { Session, User } from '@supabase/supabase-js';
+import { nanoid } from 'nanoid';
 import { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { mixpanel } from 'utils/mixpanel';
@@ -9,14 +10,16 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  error: Error | null;
   signIn: {
     email: (email: string, password: string) => Promise<void>;
     google: () => Promise<void>;
     apple: () => Promise<void>;
-    github: () => Promise<void>;
+    anonymous: () => Promise<void>;
   };
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  convertAnonymous: (email: string, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,45 +28,65 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
+  // Single unified auth initialization
   useEffect(() => {
-    // Enable cross-tab auth state sync
-    const { data } = supabase.auth.onAuthStateChange((event, currentSession) => {
-      // Only update if the state has actually changed
-      if (currentSession?.user?.id !== user?.id) {
-        console.log('Auth state changed:', event, 'User:', currentSession?.user?.email);
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+    const initializeAuth = async () => {
+      try {
+        // Get initial session
+        const {
+          data: { session: initialSession },
+        } = await supabase.auth.getSession();
 
-        // If user is confirmed and signed in, ensure profile exists
-        if (event === 'SIGNED_IN' && currentSession?.user) {
-          handleProfileCreation(currentSession.user);
+        if (initialSession?.user) {
+          setSession(initialSession);
+          setUser(initialSession.user);
+          await handleProfileCreation(initialSession.user);
+        } else {
+          // Create anonymous user if no session exists
+          const { data, error } = await supabase.auth.signInAnonymously();
+          if (error) throw error;
+
+          if (data.user) {
+            console.log('Created anonymous user:', data.user.id);
+            mixpanel.track('Anonymous User Created');
+            await handleProfileCreation(data.user);
+          }
         }
+      } catch (err) {
+        console.error('Error initializing auth:', err);
+        setError(err instanceof Error ? err : new Error('Unknown error'));
+      } finally {
+        setLoading(false);
       }
-    });
+    };
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      console.log('Initial session:', initialSession?.user?.email);
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
+    initializeAuth();
 
-      if (initialSession?.user) {
-        handleProfileCreation(initialSession.user);
+    // Set up auth state change listener
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log('Auth state changed:', event, 'User:', currentSession?.user?.email);
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+
+      if (currentSession?.user) {
+        await handleProfileCreation(currentSession.user);
       }
-
-      setLoading(false);
     });
 
     return () => {
-      data.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
-  // Helper function to handle profile creation
+  // Improved profile creation with better error handling
   const handleProfileCreation = async (user: User) => {
+    if (!user) return;
+
     try {
-      // Check if profile already exists
       const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
@@ -71,7 +94,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         .single();
 
       if (fetchError && !existingProfile) {
-        // Create profile if it doesn't exist
+        // Ensure we have provider info before creating profile
+        const isAnonymous = user.app_metadata?.provider === 'anonymous';
+
         const { error: insertError } = await supabase
           .from('profiles')
           .insert([
@@ -79,18 +104,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
               id: user.id,
               email: user.email,
               created_at: new Date().toISOString(),
+              is_anonymous: isAnonymous,
+              display_name: user.email ? user.email.split('@')[0] : `user_${nanoid(6)}`,
             },
           ])
           .single();
 
-        if (insertError) {
-          console.error('Error creating profile:', insertError);
-        } else {
-          console.log('Profile created for confirmed user:', user.email);
-        }
+        if (insertError) throw insertError;
       }
     } catch (error) {
       console.error('Error handling profile creation:', error);
+      // Don't throw - we want to continue even if profile creation fails
     }
   };
 
@@ -98,6 +122,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     session,
     user,
     loading,
+    error,
     signIn: {
       email: async (email: string, password: string) => {
         const {
@@ -131,11 +156,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
         });
         if (error) throw error;
       },
-      github: async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'github',
-        });
+      anonymous: async () => {
+        const { error } = await supabase.auth.signInAnonymously();
         if (error) throw error;
+        mixpanel.track('Anonymous Sign In');
       },
     },
     signUp: async (email: string, password: string) => {
@@ -180,6 +204,39 @@ export function AuthProvider({ children }: PropsWithChildren) {
         await supabase.auth.signOut();
       } catch (error) {
         console.error('Error signing out:', error);
+      }
+    },
+    convertAnonymous: async (email: string, password: string) => {
+      try {
+        if (user?.app_metadata?.provider !== 'anonymous') {
+          throw new Error('User is not anonymous');
+        }
+
+        const { error } = await supabase.auth.updateUser({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        mixpanel.track('Anonymous User Converted', {
+          success: true,
+        });
+
+        // Update profile
+        await supabase
+          .from('profiles')
+          .update({
+            email,
+            is_anonymous: false,
+            display_name: email.split('@')[0],
+          })
+          .eq('id', user.id);
+      } catch (error) {
+        mixpanel.track('Anonymous User Conversion Failed', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        throw error;
       }
     },
   };

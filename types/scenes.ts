@@ -10,6 +10,7 @@ export interface Scene {
   category: 'social' | 'dating' | 'networking';
   isLocked?: boolean;
   xpReward?: number;
+  bgVideo?: string;
 }
 
 export const mockScenes: Scene[] = [
@@ -22,6 +23,7 @@ export const mockScenes: Scene[] = [
     category: 'social',
     imageUrl: 'pizza-scene.jpg',
     xpReward: 10,
+    bgVideo: 'scenes/pizza_bg.mp4',
   },
   {
     id: '2',

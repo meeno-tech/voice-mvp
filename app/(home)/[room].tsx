@@ -13,6 +13,7 @@ import { Platform, TouchableOpacity, View } from 'react-native';
 import { Scene, mockScenes } from 'types/scenes';
 import { mixpanel } from 'utils/mixpanel';
 import { generateUniqueRoomName, getBaseRoomName } from 'utils/roomUtils';
+import { supabase } from 'utils/supabase';
 
 export default function RoomScreen() {
   const params = useLocalSearchParams();
@@ -30,6 +31,7 @@ export default function RoomScreen() {
   } | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bgVideoUrl, setBgVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (mountedRef.current) {
@@ -216,20 +218,37 @@ export default function RoomScreen() {
   const ExitButton = () => (
     <TouchableOpacity
       className={`
-        bg-black-12 absolute bottom-8 left-1/2 h-16
-        w-[72px] -translate-x-[35px] items-center justify-center 
-        rounded-full md:bottom-10
-        ${Platform.OS === 'web' ? 'cursor-pointer' : ''}
+        absolute bottom-8 left-1/2
+        h-16 w-[68px] -translate-x-8 items-center 
+        justify-center rounded-full bg-black/40 md:bottom-10
+        ${Platform.OS === 'web' ? 'cursor-pointer hover:bg-black/90 active:bg-black/95' : ''}
       `}
       onPress={handleDisconnect}>
       <ThemedText
-        className="text-center text-2xl font-bold text-white"
+        className="text-center font-bold text-white"
         lightColor="#FFFFFF"
-        darkColor="#FFFFFF">
+        darkColor="#FFFFFF"
+        style={{ fontSize: 24 }}>
         ✕
       </ThemedText>
     </TouchableOpacity>
   );
+
+  useEffect(() => {
+    async function fetchVideoUrl() {
+      if (scene?.bgVideo) {
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from('videos').getPublicUrl(scene.bgVideo);
+
+        setBgVideoUrl(publicUrl);
+      } else {
+        setBgVideoUrl(null);
+      }
+    }
+
+    fetchVideoUrl();
+  }, [scene]);
 
   if (!scene) {
     return (
@@ -248,37 +267,61 @@ export default function RoomScreen() {
 
   return (
     <ThemedView className="flex-1">
+      {/* Video Background - lowest layer */}
+      {bgVideoUrl && (
+        <div className="absolute inset-0" style={{ zIndex: 0 }}>
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="h-full w-full object-cover"
+            style={{
+              position: 'absolute',
+              filter: 'brightness(0.8)',
+              opacity: 0.5,
+            }}>
+            <source src={bgVideoUrl} type="video/mp4" />
+          </video>
+        </div>
+      )}
+
+      {/* Gradient Overlay - middle layer */}
       <LinearGradient
         colors={['#E7DFE2', '#E7DFE2', '#FD4C18']}
         className="absolute inset-0"
         locations={[0, 0.6, 1]}
+        style={{ zIndex: 1, opacity: 0.7 }}
       />
 
-      {error && (
-        <View className="bg-error z-1 mx-5 rounded-lg px-4 py-4">
-          <ThemedText className="text-center text-white">{error}</ThemedText>
-        </View>
-      )}
+      {/* Content - top layer */}
+      <View style={{ zIndex: 2 }} className="relative flex-1">
+        {error && (
+          <View className="bg-error mx-5 rounded-lg px-4 py-4">
+            <ThemedText className="text-center text-white">{error}</ThemedText>
+          </View>
+        )}
 
-      {connectionDetails ? (
-        <LiveKitRoom
-          token={connectionDetails.token}
-          serverUrl={connectionDetails.serverUrl}
-          connect
-          audio
-          video={false}
-          onDisconnected={handleDisconnect}
-          onError={handleRoomError}
-          onConnected={() => console.log('Connected to room:', uniqueRoomName)}>
-          <RoomContent />
-          <RoomAudioRenderer />
-          <ExitButton />
-        </LiveKitRoom>
-      ) : (
-        <View className="flex-1 items-center justify-center">
-          <ThemedText>{isConnecting ? 'Connecting to scene...' : 'Initializing...'}</ThemedText>
-        </View>
-      )}
+        {connectionDetails ? (
+          <LiveKitRoom
+            token={connectionDetails.token}
+            serverUrl={connectionDetails.serverUrl}
+            connect
+            audio
+            video={false}
+            onDisconnected={handleDisconnect}
+            onError={handleRoomError}
+            onConnected={() => console.log('Connected to room:', uniqueRoomName)}>
+            <RoomContent />
+            <RoomAudioRenderer />
+            <ExitButton />
+          </LiveKitRoom>
+        ) : (
+          <View className="flex-1 items-center justify-center">
+            <ThemedText>{isConnecting ? 'Connecting to scene...' : 'Initializing...'}</ThemedText>
+          </View>
+        )}
+      </View>
     </ThemedView>
   );
 }

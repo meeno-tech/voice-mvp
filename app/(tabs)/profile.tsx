@@ -51,6 +51,8 @@ export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
 
+  const isAnonymous = user?.app_metadata?.provider === 'anonymous';
+
   const handlePrivacyPress = () => {
     if (Platform.OS === 'web') {
       window.open('https://meeno.com/privacy', '_blank');
@@ -76,7 +78,7 @@ export default function ProfileScreen() {
     }
   };
 
-  if (!user) {
+  if (!user || isAnonymous) {
     return (
       <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.signInPrompt}>

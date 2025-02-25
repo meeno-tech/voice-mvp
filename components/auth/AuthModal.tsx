@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { mixpanel } from 'utils/mixpanel';
 
 interface AuthModalProps {
   visible: boolean;
@@ -30,7 +31,7 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { signIn, signUp } = useAuth();
+  const { user, signIn, signUp, convertAnonymous } = useAuth();
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
 
@@ -54,12 +55,13 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
       setLoading(true);
       setError('');
 
-      if (isSignUp) {
+      if (user?.app_metadata?.provider === 'anonymous') {
+        await convertAnonymous(email, password);
+        mixpanel.track('Anonymous User Converted', { success: true });
+      } else if (isSignUp) {
         await signUp(email, password);
-        console.log('Sign up completed for:', email);
       } else {
         await signIn.email(email, password);
-        console.log('Sign in completed for:', email);
       }
 
       onClose();

@@ -23,7 +23,7 @@ import { mixpanel } from 'utils/mixpanel';
 import { supabase } from 'utils/supabase';
 
 export default function HomeScreen() {
-  const { user, signOut, loading, error } = useAuth();
+  const { user, signOut, loading, error, isAnonymous } = useAuth();
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const router = useRouter();
@@ -37,6 +37,7 @@ export default function HomeScreen() {
     desktopCardWidth: 288,
     desktopCardHeight: 384,
   });
+  const [userIsAnonymous, setUserIsAnonymous] = useState(false);
 
   useEffect(() => {
     const targetDate = new Date('2025-02-23T11:30:00Z');
@@ -96,6 +97,19 @@ export default function HomeScreen() {
       timestamp: new Date().toISOString(),
     });
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      const checkAnonymous = async () => {
+        const anonymous = await isAnonymous(user);
+        setUserIsAnonymous(anonymous);
+      };
+
+      checkAnonymous();
+    } else {
+      setUserIsAnonymous(false);
+    }
+  }, [user, isAnonymous]);
 
   const handleScenePress = useCallback(
     (scene: Scene) => {
@@ -234,7 +248,7 @@ export default function HomeScreen() {
         </View>
         {dropdownVisible && (
           <View className="absolute right-0 top-[3rem] z-50 rounded-md bg-white shadow-lg">
-            {user ? (
+            {user && !userIsAnonymous ? (
               <TouchableOpacity
                 className="flex-row items-center space-x-2 px-4 py-3"
                 onPress={signOut}>
@@ -246,7 +260,9 @@ export default function HomeScreen() {
                 className="flex-row items-center space-x-2 px-4 py-3"
                 onPress={() => setShowAuthModal(true)}>
                 <Ionicons name="log-in-outline" size={20} color="#374151" />
-                <Text className="text-base font-medium text-gray-700">Login</Text>
+                <Text className="text-base font-medium text-gray-700">
+                  {userIsAnonymous ? 'Sign Up' : 'Login'}
+                </Text>
               </TouchableOpacity>
             )}
           </View>

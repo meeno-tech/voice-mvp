@@ -6,6 +6,14 @@ import { Platform } from 'react-native';
 import { mixpanel } from 'utils/mixpanel';
 import { supabase } from 'utils/supabase';
 
+interface Profile {
+  id: string;
+  email?: string;
+  created_at: string;
+  is_anonymous: boolean;
+  display_name: string;
+}
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
@@ -20,6 +28,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   convertAnonymous: (email: string, password: string) => Promise<void>;
+  isAnonymous: (checkUser?: User | null) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,16 +37,45 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<Error | null>(null);
 
   // Single unified auth initialization
   useEffect(() => {
-    const initializeAuth = async () => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      // console.log('Auth state changed:', event, 'Anonymous:', newSession?.user.is_anonymous);
+
+      // Always update state immediately to prevent UI hangs
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      setLoading(false);
+
+      // Handle profile creation in the background
+      if (newSession?.user) {
+        // Use a timeout to ensure UI updates first
+        setTimeout(() => {
+          handleProfileCreation(newSession.user).catch((error) =>
+            console.error('Background profile creation error:', error)
+          );
+        }, 100);
+      }
+    });
+
+    // Initial session check
+    const checkSession = async () => {
       try {
-        // Get initial session
         const {
           data: { session: initialSession },
+          error,
         } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('Error getting session:', error);
+          setLoading(false);
+          return;
+        }
+
+        // console.log('Initial session check:', initialSession ? 'Has session' : 'No session');
 
         if (initialSession?.user) {
           setSession(initialSession);
@@ -45,40 +83,37 @@ export function AuthProvider({ children }: PropsWithChildren) {
           await handleProfileCreation(initialSession.user);
         } else {
           // Create anonymous user if no session exists
-          const { data, error } = await supabase.auth.signInAnonymously();
-          if (error) throw error;
+          try {
+            console.log('Creating anonymous user...');
+            const { data, error: signInError } = await supabase.auth.signInAnonymously();
 
-          if (data.user) {
-            console.log('Created anonymous user:', data.user.id);
-            mixpanel.track('Anonymous User Created');
-            await handleProfileCreation(data.user);
+            if (signInError) {
+              console.error('Error creating anonymous user:', signInError);
+              setLoading(false);
+              return;
+            }
+
+            if (data.user) {
+              console.log('Created anonymous user:', data.user.id);
+              mixpanel.track('Anonymous User Created');
+              await handleProfileCreation(data.user);
+            }
+          } catch (signInError) {
+            console.error('Exception creating anonymous user:', signInError);
           }
         }
-      } catch (err) {
-        console.error('Error initializing auth:', err);
-        setError(err instanceof Error ? err : new Error('Unknown error'));
-      } finally {
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Exception in checkSession:', error);
         setLoading(false);
       }
     };
 
-    initializeAuth();
-
-    // Set up auth state change listener
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log('Auth state changed:', event, 'User:', currentSession?.user?.email);
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-
-      if (currentSession?.user) {
-        await handleProfileCreation(currentSession.user);
-      }
-    });
+    checkSession();
 
     return () => {
-      subscription.unsubscribe();
+      authListener.subscription.unsubscribe();
     };
   }, []);
 
@@ -91,30 +126,40 @@ export function AuthProvider({ children }: PropsWithChildren) {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .single<Profile>();
 
       if (fetchError && !existingProfile) {
         // Ensure we have provider info before creating profile
         const isAnonymous = user.app_metadata?.provider === 'anonymous';
 
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: user.id,
-              email: user.email,
-              created_at: new Date().toISOString(),
-              is_anonymous: isAnonymous,
-              display_name: user.email ? user.email.split('@')[0] : `user_${nanoid(6)}`,
-            },
-          ])
-          .single();
+        // If the user is anonymous but app_metadata doesn't reflect it,
+        // update the app_metadata
+        if (existingProfile && (existingProfile as Profile).is_anonymous && !isAnonymous) {
+          try {
+            await supabase.auth.updateUser({
+              data: { provider: 'anonymous' },
+            });
+          } catch (error) {
+            console.error('Failed to update app_metadata:', error);
+          }
+        }
 
-        if (insertError) throw insertError;
+        const profileData = {
+          id: user.id,
+          email: user.email,
+          created_at: new Date().toISOString(),
+          is_anonymous: isAnonymous,
+          display_name: user.email ? user.email.split('@')[0] : `user_${nanoid(6)}`,
+        };
+
+        const { error: insertError } = await supabase.from('profiles').insert([profileData]);
+
+        if (insertError) {
+          console.error('Error inserting profile:', insertError);
+        }
       }
     } catch (error) {
-      console.error('Error handling profile creation:', error);
-      // Don't throw - we want to continue even if profile creation fails
+      console.error('Exception in handleProfileCreation:', error);
     }
   };
 
@@ -237,6 +282,28 @@ export function AuthProvider({ children }: PropsWithChildren) {
           error: error instanceof Error ? error.message : 'Unknown error',
         });
         throw error;
+      }
+    },
+    isAnonymous: async (checkUser?: User | null) => {
+      const userToCheck = checkUser || user;
+      if (!userToCheck) return false;
+
+      // First check app_metadata
+      if (userToCheck.app_metadata?.provider === 'anonymous') {
+        return true;
+      }
+
+      // If app_metadata doesn't have it, check the profiles table
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('is_anonymous')
+          .eq('id', userToCheck.id)
+          .single();
+
+        return !!data?.is_anonymous;
+      } catch {
+        return false;
       }
     },
   };

@@ -18,12 +18,12 @@ interface AuthContextType {
   loading: boolean;
   error: Error | null;
   signIn: {
-    email: (email: string, password: string) => Promise<void>;
+    email: (email: string) => Promise<void>;
     google: () => Promise<void>;
     apple: () => Promise<void>;
     anonymous: () => Promise<void>;
   };
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAnonymous: (checkUser?: User | null) => boolean;
 }
@@ -214,10 +214,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
   /**
    * Convert an anonymous user to a registered user.
    * @param email - The email address to use for the new account
-   * @param password - The password to use for the new account
    * @returns A promise that resolves to true if the conversion was successful, false otherwise
    */
-  const convertAnonymousToRegistered = async (email: string, password: string) => {
+  const convertAnonymousToRegistered = async (email: string) => {
     try {
       console.log('🔄 Converting anonymous user to registered user:', {
         userId: user?.id,
@@ -235,35 +234,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (hasPartialConversion) {
         // For users who already have an email but haven't confirmed it
         alert(
-          'You already have a pending email confirmation. Please check your email and click the confirmation link to complete your account setup.'
+          'You already have a pending email confirmation. Please check your email for a verification link to complete your account setup.'
         );
-
-        // Optionally, offer to resend the confirmation email
-        const resend = confirm('Would you like us to resend the confirmation email?');
-        if (resend && user.email) {
-          await supabase.auth.resend({
-            type: 'signup',
-            email: user.email,
-          });
-          alert('Confirmation email has been resent. Please check your inbox.');
-        }
-
         return true;
       }
 
-      // Normal flow for first-time conversion
-      const { error } = await supabase.auth.updateUser({
+      // Update the user with email
+      console.log('📧 Updating email for anonymous user');
+      const { error: emailUpdateError } = await supabase.auth.updateUser({
         email,
-        password,
         data: {
           is_anonymous: false,
-          provider: 'email',
         },
       });
 
-      if (error) {
-        console.error('❌ Error converting anonymous user:', error);
-        throw error;
+      if (emailUpdateError) {
+        console.error('❌ Error updating email for anonymous user:', emailUpdateError);
+        throw emailUpdateError;
       }
 
       console.log('✅ Successfully initiated anonymous user conversion');
@@ -289,11 +276,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
         }
       }
 
-      // Alert the user about the confirmation email
-      alert(
-        'Please check your email to confirm your account. You need to click the confirmation link to complete the sign-up process.'
-      );
-
       return true;
     } catch (error) {
       console.error('❌ Anonymous user conversion failed:', error);
@@ -310,22 +292,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
     loading,
     error,
     signIn: {
-      email: async (email: string, password: string) => {
-        console.log('🔑 Attempting email sign in for:', email);
+      email: async (email: string) => {
+        console.log('🔑 Attempting email magic link sign in for:', email);
 
         // Check if current user is anonymous before signing in
         const isCurrentUserAnonymous = user?.is_anonymous === true;
 
         try {
-          // If user is anonymous, try to convert to the existing account
+          // If user is anonymous, try to convert to a registered account
           if (isCurrentUserAnonymous) {
-            console.log('🔄 Anonymous user signing in to existing account');
+            console.log('🔄 Anonymous user signing in with email');
 
             try {
-              // First try to update the anonymous user (this will fail if email exists)
-              // Supabase documentation also uses control flow like this
-              await convertAnonymousToRegistered(email, password);
-              console.log('✅ Successfully converted anonymous user to registered user');
+              await convertAnonymousToRegistered(email);
+              console.log('✅ Successfully initiated anonymous user conversion');
               return;
             } catch {
               // If error indicates email exists, proceed with normal sign-in
@@ -333,43 +313,27 @@ export function AuthProvider({ children }: PropsWithChildren) {
             }
           }
 
-          // Normal sign-in flow
-          const {
-            data: { user: signedInUser },
-            error,
-          } = await supabase.auth.signInWithPassword({
+          // Normal sign-in flow with magic link
+          const { error } = await supabase.auth.signInWithOtp({
             email,
-            password,
+            options: {
+              shouldCreateUser: true,
+              emailRedirectTo: window.location.origin, // Redirect back to the app after email verification
+            },
           });
 
           if (error) {
-            console.error('❌ Email sign in failed:', error);
+            console.error('❌ Email magic link sign in failed:', error);
             throw error;
           }
 
-          if (signedInUser) {
-            console.log('✅ Email sign in successful for user:', signedInUser.id);
+          console.log('✅ Magic link sent successfully to:', email);
+          alert('Please check your email for a sign in link.');
 
-            // TODO: Data migration from anonymous to existing account (when data is available)
-            // if (isCurrentUserAnonymous) {
-            //   console.log('ℹ️ User transitioned from anonymous to authenticated');
-
-            //   // According to Supabase documentation, this is where we would migrate data
-            //   // from the anonymous user to the existing account.
-            // }
-
-            mixpanel.identify(signedInUser.id);
-            mixpanel.setUserProperties({
-              auth_method: 'email',
-              signed_up_at: signedInUser.created_at,
-            });
-            mixpanel.track('Sign In', {
-              method: 'email',
-              was_anonymous: isCurrentUserAnonymous,
-            });
-          } else {
-            console.warn('⚠️ Sign in succeeded but no user data returned');
-          }
+          mixpanel.track('Magic Link Sent', {
+            method: 'email',
+            was_anonymous: isCurrentUserAnonymous,
+          });
         } catch (error) {
           console.error('❌ Sign in process failed:', error);
           throw error;
@@ -408,7 +372,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         mixpanel.track('Anonymous Sign In');
       },
     },
-    signUp: async (email: string, password: string) => {
+    signUp: async (email: string) => {
       try {
         console.log('📝 Starting sign up process for:', email);
 
@@ -418,14 +382,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
         // If user is anonymous, convert instead of creating a new account
         if (isCurrentUserAnonymous) {
           console.log('🔄 Converting anonymous user to registered user');
-          await convertAnonymousToRegistered(email, password);
+          await convertAnonymousToRegistered(email);
           return;
         }
 
-        // Otherwise proceed with regular sign up
-        const { data, error } = await supabase.auth.signUp({
+        // Otherwise proceed with regular sign up using magic link
+        const { error } = await supabase.auth.signInWithOtp({
           email,
-          password,
+          options: {
+            shouldCreateUser: true,
+            emailRedirectTo: window.location.origin, // Redirect back to the app after email verification
+          },
         });
 
         if (error) {
@@ -433,32 +400,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
           throw error;
         }
 
-        if (!data.user) {
-          console.error('❌ Sign up successful but no user returned');
-          throw new Error('Sign up successful but no user returned');
-        }
-
-        console.log('✅ Sign up successful for user:', {
-          id: data.user.id,
-          email: data.user.email,
-          confirmationSent: data.user.confirmation_sent_at ? true : false,
-        });
+        console.log('✅ Sign up initiated for email:', email);
 
         // Track successful sign up with non-sensitive data
-        mixpanel.track('Sign Up', {
-          auth_method: 'email',
+        mixpanel.track('Sign Up Initiated', {
+          auth_method: 'email_magic_link',
           timestamp: new Date().toISOString(),
           platform: Platform.OS,
           success: true,
         });
 
-        console.log('📧 Confirmation email sent to:', data.user.email);
-        alert('Please check your email to confirm your account before signing in.');
+        console.log('📧 Magic link sent to:', email);
       } catch (error) {
         // Track failed sign up attempt (without sensitive info)
         console.error('❌ Sign up process failed:', error);
         mixpanel.track('Sign Up Failed', {
-          auth_method: 'email',
+          auth_method: 'email_magic_link',
           timestamp: new Date().toISOString(),
           platform: Platform.OS,
           error: error instanceof Error ? error.message : 'Unknown error',

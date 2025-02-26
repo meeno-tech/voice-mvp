@@ -1,6 +1,5 @@
 // contexts/AuthContext.tsx
 import { Session, User } from '@supabase/supabase-js';
-import { nanoid } from 'nanoid';
 import { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { mixpanel } from 'utils/mixpanel';
@@ -11,7 +10,6 @@ interface Profile {
   email?: string;
   created_at: string;
   is_anonymous: boolean;
-  display_name: string;
 }
 
 interface AuthContextType {
@@ -27,8 +25,7 @@ interface AuthContextType {
   };
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  convertAnonymous: (email: string, password: string) => Promise<void>;
-  isAnonymous: (checkUser?: User | null) => Promise<boolean>;
+  isAnonymous: (checkUser?: User | null) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,7 +42,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log('🔄 Auth state changed:', event, {
         userId: newSession?.user?.id,
-        isAnonymous: newSession?.user?.app_metadata?.provider === 'anonymous',
+        isAnonymous: newSession?.user?.is_anonymous === true,
       });
 
       // Always update state immediately to prevent UI hangs
@@ -54,7 +51,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setLoading(false);
 
       // Handle profile creation in the background
-      if (newSession?.user) {
+      if (newSession?.user && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
         console.log('👤 User in new session:', {
           id: newSession.user.id,
           email: newSession.user.email,
@@ -69,7 +66,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
           );
         }, 100);
       } else {
-        console.log('ℹ️ Auth state changed with no user in session');
+        console.log(
+          'ℹ️ Auth state changed with no user in session or not requiring profile update'
+        );
       }
     });
 
@@ -100,7 +99,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
           });
           setSession(initialSession);
           setUser(initialSession.user);
-          await handleProfileCreation(initialSession.user);
         } else {
           // Create anonymous user if no session exists
           try {
@@ -119,7 +117,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
                 provider: data.user.app_metadata?.provider,
               });
               mixpanel.track('Anonymous User Created');
-              await handleProfileCreation(data.user);
             } else {
               console.warn('⚠️ Anonymous sign-in succeeded but no user data returned');
             }
@@ -158,10 +155,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
         .single<Profile>();
 
       if (existingProfile) {
+        // Profile exists, only ensure is_anonymous is in sync with User object
+        // NOTE: this is just because we have is_anonymous in profile, it isn't used and might be
+        // removed in the future
+        const isAnonymousUser = user.is_anonymous === true;
+
+        if (existingProfile.is_anonymous !== isAnonymousUser) {
+          console.log('🔄 Updating profile is_anonymous to match user.is_anonymous');
+          await supabase
+            .from('profiles')
+            .update({ is_anonymous: isAnonymousUser })
+            .eq('id', user.id);
+        }
+
         console.log('✅ Profile already exists for user:', {
           userId: user.id,
-          isAnonymous: existingProfile.is_anonymous,
-          displayName: existingProfile.display_name,
+          isAnonymous: isAnonymousUser,
         });
         return;
       }
@@ -169,37 +178,24 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (fetchError) {
         console.log('ℹ️ No existing profile found, creating new profile');
 
-        // Ensure we have provider info before creating profile
-        const isAnonymous = user.app_metadata?.provider === 'anonymous';
-        console.log('👤 User authentication provider:', user.app_metadata?.provider);
+        const isAnonymous = user.is_anonymous === true;
 
-        // If the user is anonymous but app_metadata doesn't reflect it,
-        // update the app_metadata
-        if (existingProfile && (existingProfile as Profile).is_anonymous && !isAnonymous) {
-          try {
-            console.log('🔄 Updating app_metadata to mark user as anonymous');
-            await supabase.auth.updateUser({
-              data: { provider: 'anonymous' },
-            });
-            console.log('✅ Successfully updated app_metadata');
-          } catch (error) {
-            console.error('❌ Failed to update app_metadata:', error);
-          }
-        }
+        console.log('👤 User authentication status:', {
+          isAnonymous,
+          is_anonymous_prop: user.is_anonymous,
+        });
 
         const profileData = {
           id: user.id,
           email: user.email,
           created_at: new Date().toISOString(),
           is_anonymous: isAnonymous,
-          display_name: user.email ? user.email.split('@')[0] : `user_${nanoid(6)}`,
         };
 
         console.log('📝 Creating new profile with data:', {
           userId: profileData.id,
           email: profileData.email,
           isAnonymous: profileData.is_anonymous,
-          displayName: profileData.display_name,
         });
 
         const { error: insertError } = await supabase.from('profiles').insert([profileData]);
@@ -215,6 +211,99 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   };
 
+  /**
+   * Convert an anonymous user to a registered user.
+   * @param email - The email address to use for the new account
+   * @param password - The password to use for the new account
+   * @returns A promise that resolves to true if the conversion was successful, false otherwise
+   */
+  const convertAnonymousToRegistered = async (email: string, password: string) => {
+    try {
+      console.log('🔄 Converting anonymous user to registered user:', {
+        userId: user?.id,
+        newEmail: email,
+      });
+
+      if (!(user?.is_anonymous === true)) {
+        console.error('❌ Cannot convert non-anonymous user');
+        throw new Error('User is not anonymous');
+      }
+
+      // Check if the user already has an email set (partial conversion)
+      const hasPartialConversion = user.email !== null && user.email !== '';
+
+      if (hasPartialConversion) {
+        // For users who already have an email but haven't confirmed it
+        alert(
+          'You already have a pending email confirmation. Please check your email and click the confirmation link to complete your account setup.'
+        );
+
+        // Optionally, offer to resend the confirmation email
+        const resend = confirm('Would you like us to resend the confirmation email?');
+        if (resend && user.email) {
+          await supabase.auth.resend({
+            type: 'signup',
+            email: user.email,
+          });
+          alert('Confirmation email has been resent. Please check your inbox.');
+        }
+
+        return true;
+      }
+
+      // Normal flow for first-time conversion
+      const { error } = await supabase.auth.updateUser({
+        email,
+        password,
+        data: {
+          is_anonymous: false,
+          provider: 'email',
+        },
+      });
+
+      if (error) {
+        console.error('❌ Error converting anonymous user:', error);
+        throw error;
+      }
+
+      console.log('✅ Successfully initiated anonymous user conversion');
+      mixpanel.track('Anonymous User Conversion Initiated', {
+        success: true,
+      });
+
+      // Update profile (updateUser() only updates user authentication data, not profile)
+      if (user) {
+        console.log('📝 Updating profile for converted user');
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            email,
+            is_anonymous: false,
+          })
+          .eq('id', user.id);
+
+        if (profileError) {
+          console.error('⚠️ Error updating profile after conversion:', profileError);
+        } else {
+          console.log('✅ Successfully updated profile for converted user');
+        }
+      }
+
+      // Alert the user about the confirmation email
+      alert(
+        'Please check your email to confirm your account. You need to click the confirmation link to complete the sign-up process.'
+      );
+
+      return true;
+    } catch (error) {
+      console.error('❌ Anonymous user conversion failed:', error);
+      mixpanel.track('Anonymous User Conversion Failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     session,
     user,
@@ -223,29 +312,67 @@ export function AuthProvider({ children }: PropsWithChildren) {
     signIn: {
       email: async (email: string, password: string) => {
         console.log('🔑 Attempting email sign in for:', email);
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
 
-        if (error) {
-          console.error('❌ Email sign in failed:', error);
-          throw error;
-        }
+        // Check if current user is anonymous before signing in
+        const isCurrentUserAnonymous = user?.is_anonymous === true;
 
-        if (user) {
-          console.log('✅ Email sign in successful for user:', user.id);
-          mixpanel.identify(user.id);
-          mixpanel.setUserProperties({
-            auth_method: 'email',
-            signed_up_at: user.created_at,
+        try {
+          // If user is anonymous, try to convert to the existing account
+          if (isCurrentUserAnonymous) {
+            console.log('🔄 Anonymous user signing in to existing account');
+
+            try {
+              // First try to update the anonymous user (this will fail if email exists)
+              // Supabase documentation also uses control flow like this
+              await convertAnonymousToRegistered(email, password);
+              console.log('✅ Successfully converted anonymous user to registered user');
+              return;
+            } catch {
+              // If error indicates email exists, proceed with normal sign-in
+              console.log('ℹ️ Email exists, proceeding with normal sign-in');
+            }
+          }
+
+          // Normal sign-in flow
+          const {
+            data: { user: signedInUser },
+            error,
+          } = await supabase.auth.signInWithPassword({
+            email,
+            password,
           });
-          mixpanel.track('Sign In', { method: 'email' });
-        } else {
-          console.warn('⚠️ Sign in succeeded but no user data returned');
+
+          if (error) {
+            console.error('❌ Email sign in failed:', error);
+            throw error;
+          }
+
+          if (signedInUser) {
+            console.log('✅ Email sign in successful for user:', signedInUser.id);
+
+            // TODO: Data migration from anonymous to existing account (when data is available)
+            // if (isCurrentUserAnonymous) {
+            //   console.log('ℹ️ User transitioned from anonymous to authenticated');
+
+            //   // According to Supabase documentation, this is where we would migrate data
+            //   // from the anonymous user to the existing account.
+            // }
+
+            mixpanel.identify(signedInUser.id);
+            mixpanel.setUserProperties({
+              auth_method: 'email',
+              signed_up_at: signedInUser.created_at,
+            });
+            mixpanel.track('Sign In', {
+              method: 'email',
+              was_anonymous: isCurrentUserAnonymous,
+            });
+          } else {
+            console.warn('⚠️ Sign in succeeded but no user data returned');
+          }
+        } catch (error) {
+          console.error('❌ Sign in process failed:', error);
+          throw error;
         }
       },
       google: async () => {
@@ -285,6 +412,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
       try {
         console.log('📝 Starting sign up process for:', email);
 
+        // Check if current user is anonymous
+        const isCurrentUserAnonymous = user?.is_anonymous === true;
+
+        // If user is anonymous, convert instead of creating a new account
+        if (isCurrentUserAnonymous) {
+          console.log('🔄 Converting anonymous user to registered user');
+          await convertAnonymousToRegistered(email, password);
+          return;
+        }
+
+        // Otherwise proceed with regular sign up
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -340,92 +478,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         console.error('❌ Error signing out:', error);
       }
     },
-    convertAnonymous: async (email: string, password: string) => {
-      try {
-        console.log('🔄 Converting anonymous user to registered user:', {
-          userId: user?.id,
-          newEmail: email,
-        });
-
-        if (user?.app_metadata?.provider !== 'anonymous') {
-          console.error('❌ Cannot convert non-anonymous user:', user?.app_metadata?.provider);
-          throw new Error('User is not anonymous');
-        }
-
-        const { error } = await supabase.auth.updateUser({
-          email,
-          password,
-        });
-
-        if (error) {
-          console.error('❌ Error converting anonymous user:', error);
-          throw error;
-        }
-
-        console.log('✅ Successfully converted anonymous user to registered user');
-        mixpanel.track('Anonymous User Converted', {
-          success: true,
-        });
-
-        // Update profile
-        console.log('📝 Updating profile for converted user');
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            email,
-            is_anonymous: false,
-            display_name: email.split('@')[0],
-          })
-          .eq('id', user.id);
-
-        if (profileError) {
-          console.error('⚠️ Error updating profile after conversion:', profileError);
-        } else {
-          console.log('✅ Successfully updated profile for converted user');
-        }
-      } catch (error) {
-        console.error('❌ Anonymous user conversion failed:', error);
-        mixpanel.track('Anonymous User Conversion Failed', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        throw error;
-      }
-    },
-    isAnonymous: async (checkUser?: User | null) => {
+    isAnonymous: (checkUser?: User | null): boolean => {
       const userToCheck = checkUser || user;
-      if (!userToCheck) {
-        console.log('ℹ️ isAnonymous check: No user to check');
-        return false;
-      }
-
-      console.log('🔍 Checking if user is anonymous:', userToCheck.id);
-
-      // First check app_metadata
-      if (userToCheck.app_metadata?.provider === 'anonymous') {
-        console.log('✅ User is anonymous based on app_metadata');
-        return true;
-      }
-
-      // If app_metadata doesn't have it, check the profiles table
-      try {
-        console.log('🔍 Checking profiles table for anonymous status');
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('is_anonymous')
-          .eq('id', userToCheck.id)
-          .single();
-
-        if (error) {
-          console.error('❌ Error checking profile for anonymous status:', error);
-          return false;
-        }
-
-        console.log('ℹ️ Anonymous status from profile:', !!data?.is_anonymous);
-        return !!data?.is_anonymous;
-      } catch (error) {
-        console.error('❌ Exception in isAnonymous check:', error);
-        return false;
-      }
+      return userToCheck?.is_anonymous === true;
     },
   };
 

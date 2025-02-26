@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { AuthModal } from 'components/auth/AuthModal';
 import VokalSceneCard from 'components/scenes/VokalSceneCard';
+import { ThemedText } from 'components/ThemedText';
 import { useAuth } from 'contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import * as Share from 'expo-sharing';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   FlatList,
@@ -21,7 +23,7 @@ import { mixpanel } from 'utils/mixpanel';
 import { supabase } from 'utils/supabase';
 
 export default function HomeScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading, error, isAnonymous } = useAuth();
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const router = useRouter();
@@ -35,6 +37,7 @@ export default function HomeScreen() {
     desktopCardWidth: 288,
     desktopCardHeight: 384,
   });
+  const [userIsAnonymous, setUserIsAnonymous] = useState(false);
 
   useEffect(() => {
     const targetDate = new Date('2025-02-23T11:30:00Z');
@@ -95,9 +98,32 @@ export default function HomeScreen() {
     });
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      const checkAnonymous = async () => {
+        const anonymous = await isAnonymous(user);
+        setUserIsAnonymous(anonymous);
+      };
+
+      checkAnonymous();
+    } else {
+      setUserIsAnonymous(false);
+    }
+  }, [user, isAnonymous]);
+
   const handleScenePress = useCallback(
     (scene: Scene) => {
       if (scene.isLocked) {
+        // If anonymous user, prompt to sign up
+        if (user?.app_metadata?.provider === 'anonymous') {
+          setShowAuthModal(true);
+          mixpanel.track('Anonymous User Blocked', {
+            scene_id: scene.id,
+            scene_name: scene.title,
+          });
+          return;
+        }
+
         mixpanel.track('Scene Locked Interaction', {
           scene_id: scene.id,
           scene_name: scene.title,
@@ -175,6 +201,23 @@ export default function HomeScreen() {
     }
   };
 
+  if (error) {
+    // TODO: Do this better, but needed for dev rn
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ThemedText className="text-red-500">Failed to initialize: {error.message}</ThemedText>
+      </View>
+    );
+  }
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
   return (
     <View className="pt-safe flex flex-1 flex-col bg-white">
       {/* Header */}
@@ -205,7 +248,7 @@ export default function HomeScreen() {
         </View>
         {dropdownVisible && (
           <View className="absolute right-0 top-[3rem] z-50 rounded-md bg-white shadow-lg">
-            {user ? (
+            {user && !userIsAnonymous ? (
               <TouchableOpacity
                 className="flex-row items-center space-x-2 px-4 py-3"
                 onPress={signOut}>
@@ -217,7 +260,9 @@ export default function HomeScreen() {
                 className="flex-row items-center space-x-2 px-4 py-3"
                 onPress={() => setShowAuthModal(true)}>
                 <Ionicons name="log-in-outline" size={20} color="#374151" />
-                <Text className="text-base font-medium text-gray-700">Login</Text>
+                <Text className="text-base font-medium text-gray-700">
+                  {userIsAnonymous ? 'Sign Up' : 'Login'}
+                </Text>
               </TouchableOpacity>
             )}
           </View>

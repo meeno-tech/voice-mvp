@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { OtpVerificationForm } from './OtpVerificationForm';
 
 interface AuthModalProps {
   visible: boolean;
@@ -26,9 +27,10 @@ interface AuthModalProps {
 export function AuthModal({ visible, onClose }: AuthModalProps) {
   const [isSignUp, setIsSignUp] = useState(true); // Default to sign up flow
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [sentToEmail, setSentToEmail] = useState('');
 
   const { signIn, signUp } = useAuth();
   const colorScheme = useColorScheme();
@@ -38,15 +40,16 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
   useEffect(() => {
     if (visible) {
       setEmail('');
-      setPassword('');
       setError('');
       setIsSignUp(true);
+      setMagicLinkSent(false);
+      setSentToEmail('');
     }
   }, [visible]);
 
   const handleAuth = async () => {
-    if (!email || !password) {
-      setError('Please fill in all fields');
+    if (!email) {
+      setError('Please enter your email');
       return;
     }
 
@@ -55,14 +58,14 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
       setError('');
 
       if (isSignUp) {
-        await signUp(email, password);
-        console.log('Sign up completed for:', email);
+        await signUp(email);
       } else {
-        await signIn.email(email, password);
-        console.log('Sign in completed for:', email);
+        await signIn.email(email);
       }
 
-      onClose();
+      // Show magic link sent confirmation
+      setSentToEmail(email);
+      setMagicLinkSent(true);
     } catch (err) {
       console.error('Auth error:', err);
       if (err instanceof Error) {
@@ -70,8 +73,6 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
         if (err.message.includes('User already registered')) {
           setError('An account with this email already exists. Please sign in instead.');
           setIsSignUp(false);
-        } else if (err.message.includes('Invalid login credentials')) {
-          setError('Invalid email or password. Please try again.');
         } else {
           setError(err.message);
         }
@@ -83,42 +84,71 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
     }
   };
 
+  const renderMagicLinkSent = () => (
+    <View style={styles.form}>
+      <ThemedText style={styles.title}>Check Your Email</ThemedText>
+      
+      <ThemedText style={styles.description}>
+        We've sent a magic link to:
+      </ThemedText>
+      
+      <ThemedText style={styles.emailHighlight}>{sentToEmail}</ThemedText>
+      
+      <ThemedText style={styles.description}>
+        Click the link in the email to {isSignUp ? 'complete your sign up' : 'sign in'}.
+      </ThemedText>
+      
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: Colors[theme].tint }]}
+        onPress={onClose}>
+        <ThemedText style={styles.buttonText} lightColor="#FFFFFF" darkColor="#FFFFFF">
+          Close
+        </ThemedText>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}>
-          <Pressable onPress={(e) => e.stopPropagation()}>
-            <ThemedView style={styles.container}>
-              <View style={styles.header}>
-                <ThemedText type="subtitle">
-                  {isSignUp ? 'Create Account' : 'Welcome Back'}
-                </ThemedText>
-                <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                  <IconSymbol name="xmark" size={20} color={Colors[theme].text} />
-                </TouchableOpacity>
-              </View>
+          style={styles.container}>
+          <Pressable 
+            style={[
+              styles.modalContent, 
+              { backgroundColor: Colors[theme].background }
+            ]} 
+            onPress={(e) => e.stopPropagation()}>
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                <IconSymbol name="xmark" size={20} color={Colors[theme].text} />
+              </TouchableOpacity>
+            </View>
 
+            {magicLinkSent ? (
+              renderMagicLinkSent()
+            ) : (
               <View style={styles.form}>
+                <ThemedText style={styles.title}>
+                  {isSignUp ? 'Create an Account' : 'Welcome Back'}
+                </ThemedText>
+
                 <TextInput
-                  style={[styles.input, { color: Colors[theme].text }]}
+                  style={[
+                    styles.input, 
+                    { 
+                      color: Colors[theme].text,
+                      backgroundColor: Colors[theme].surfaceElement,
+                      borderColor: Colors[theme].border
+                    }
+                  ]}
                   placeholder="Email"
                   placeholderTextColor={Colors[theme].tabIconDefault}
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
                   keyboardType="email-address"
-                  editable={!loading}
-                />
-
-                <TextInput
-                  style={[styles.input, { color: Colors[theme].text }]}
-                  placeholder="Password"
-                  placeholderTextColor={Colors[theme].tabIconDefault}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
                   editable={!loading}
                 />
 
@@ -152,48 +182,7 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
                   </ThemedText>
                 </TouchableOpacity>
               </View>
-
-              {/* <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <ThemedText style={styles.dividerText}>
-                  or continue with
-                </ThemedText>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <View style={styles.socialButtons}>
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => handleSocialAuth("google")}
-                >
-                  <FontAwesome name="google" size={24} color="#DB4437" />
-                </TouchableOpacity>
-
-                {Platform.OS === "ios" && (
-                  <TouchableOpacity
-                    style={styles.socialButton}
-                    onPress={() => handleSocialAuth("apple")}
-                  >
-                    <FontAwesome
-                      name="apple"
-                      size={24}
-                      color={Colors[theme].text}
-                    />
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => handleSocialAuth("github")}
-                >
-                  <FontAwesome
-                    name="github"
-                    size={24}
-                    color={Colors[theme].text}
-                  />
-                </TouchableOpacity> 
-              </View>*/}
-            </ThemedView>
+            )}
           </Pressable>
         </KeyboardAvoidingView>
       </Pressable>
@@ -208,11 +197,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  keyboardView: {
+  container: {
     width: '100%',
     alignItems: 'center',
   },
-  container: {
+  modalContent: {
     width: '90%',
     maxWidth: 400,
     borderRadius: 16,
@@ -235,7 +224,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginBottom: 24,
   },
@@ -248,7 +237,6 @@ const styles = StyleSheet.create({
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 16,
@@ -285,5 +273,21 @@ const styles = StyleSheet.create({
   },
   spinner: {
     marginLeft: 8,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  description: {
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  emailHighlight: {
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 16,
   },
 });

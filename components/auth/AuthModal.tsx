@@ -5,7 +5,8 @@ import { IconSymbol } from 'components/ui/IconSymbol';
 import { Colors } from 'constants/Colors';
 import { useAuth } from 'contexts/AuthContext';
 import { useColorScheme } from 'hooks/useColorScheme';
-import { useEffect, useState } from 'react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -24,13 +25,13 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ visible, onClose }: AuthModalProps) {
-  const [isSignUp, setIsSignUp] = useState(true); // Default to sign up flow
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
 
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
 
@@ -38,15 +39,15 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
   useEffect(() => {
     if (visible) {
       setEmail('');
-      setPassword('');
+      setOtpCode('');
       setError('');
-      setIsSignUp(true);
+      setOtpSent(false);
     }
   }, [visible]);
 
-  const handleAuth = async () => {
-    if (!email || !password) {
-      setError('Please fill in all fields');
+  const handleSendOtp = async () => {
+    if (!email) {
+      setError('Please enter your email');
       return;
     }
 
@@ -54,24 +55,37 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
       setLoading(true);
       setError('');
 
-      if (isSignUp) {
-        await signUp(email, password);
-        console.log('Sign up completed for:', email);
+      await signIn.otp(email);
+      setOtpSent(true);
+    } catch (err) {
+      console.error('Auth error:', err);
+      if (err instanceof Error) {
+        setError(err.message);
       } else {
-        await signIn.email(email, password);
-        console.log('Sign in completed for:', email);
+        setError('An unexpected error occurred. Please try again.');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const handleVerifyOtp = async () => {
+    if (!otpCode) {
+      setError('Please enter the verification code');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      await signIn.verifyOtp(email, otpCode);
       onClose();
     } catch (err) {
       console.error('Auth error:', err);
       if (err instanceof Error) {
-        // Handle specific Supabase errors more gracefully
-        if (err.message.includes('User already registered')) {
-          setError('An account with this email already exists. Please sign in instead.');
-          setIsSignUp(false);
-        } else if (err.message.includes('Invalid login credentials')) {
-          setError('Invalid email or password. Please try again.');
+        if (err.message.includes('Invalid otp')) {
+          setError('Invalid verification code. Please try again.');
         } else {
           setError(err.message);
         }
@@ -93,7 +107,7 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
             <ThemedView style={styles.container}>
               <View style={styles.header}>
                 <ThemedText type="subtitle">
-                  {isSignUp ? 'Create Account' : 'Welcome Back'}
+                  {otpSent ? 'Enter Verification Code' : 'Continue with Email'}
                 </ThemedText>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                   <IconSymbol name="xmark" size={20} color={Colors[theme].text} />
@@ -101,98 +115,84 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
               </View>
 
               <View style={styles.form}>
-                <TextInput
-                  style={[styles.input, { color: Colors[theme].text }]}
-                  placeholder="Email"
-                  placeholderTextColor={Colors[theme].tabIconDefault}
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  editable={!loading}
-                />
-
-                <TextInput
-                  style={[styles.input, { color: Colors[theme].text }]}
-                  placeholder="Password"
-                  placeholderTextColor={Colors[theme].tabIconDefault}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  editable={!loading}
-                />
-
-                {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
-
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: Colors[theme].tint },
-                    loading && styles.buttonDisabled,
-                  ]}
-                  onPress={handleAuth}
-                  disabled={loading}>
-                  <ThemedText style={styles.buttonText} lightColor="#FFFFFF" darkColor="#FFFFFF">
-                    {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
-                  </ThemedText>
-                  {loading && <ActivityIndicator color="#FFFFFF" style={styles.spinner} />}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => {
-                    setIsSignUp(!isSignUp);
-                    setError(''); // Clear any existing errors
-                  }}
-                  style={styles.switchButton}
-                  disabled={loading}>
-                  <ThemedText style={[styles.switchText, loading && styles.textDisabled]}>
-                    {isSignUp
-                      ? 'Already have an account? Sign in'
-                      : "Don't have an account? Sign up"}
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
-
-              {/* <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <ThemedText style={styles.dividerText}>
-                  or continue with
-                </ThemedText>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <View style={styles.socialButtons}>
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => handleSocialAuth("google")}
-                >
-                  <FontAwesome name="google" size={24} color="#DB4437" />
-                </TouchableOpacity>
-
-                {Platform.OS === "ios" && (
-                  <TouchableOpacity
-                    style={styles.socialButton}
-                    onPress={() => handleSocialAuth("apple")}
-                  >
-                    <FontAwesome
-                      name="apple"
-                      size={24}
-                      color={Colors[theme].text}
+                {!otpSent ? (
+                  <>
+                    <TextInput
+                      style={[styles.input, { color: Colors[theme].text }]}
+                      placeholder="Email"
+                      placeholderTextColor={Colors[theme].tabIconDefault}
+                      value={email}
+                      onChangeText={setEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      editable={!loading}
                     />
-                  </TouchableOpacity>
-                )}
 
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => handleSocialAuth("github")}
-                >
-                  <FontAwesome
-                    name="github"
-                    size={24}
-                    color={Colors[theme].text}
-                  />
-                </TouchableOpacity> 
-              </View>*/}
+                    {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
+
+                    <TouchableOpacity
+                      style={[
+                        styles.button,
+                        { backgroundColor: Colors[theme].tint },
+                        loading && styles.buttonDisabled,
+                      ]}
+                      onPress={handleSendOtp}
+                      disabled={loading}>
+                      <ThemedText
+                        style={styles.buttonText}
+                        lightColor="#FFFFFF"
+                        darkColor="#FFFFFF">
+                        {loading ? 'Sending...' : 'Continue with Email'}
+                      </ThemedText>
+                      {loading && <ActivityIndicator color="#FFFFFF" style={styles.spinner} />}
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <ThemedText style={styles.otpMessage}>
+                      We&lsquo;ve sent a verification code to {email}
+                    </ThemedText>
+
+                    <TextInput
+                      style={[styles.input, { color: Colors[theme].text }]}
+                      placeholder="Verification Code"
+                      placeholderTextColor={Colors[theme].tabIconDefault}
+                      value={otpCode}
+                      onChangeText={setOtpCode}
+                      keyboardType="number-pad"
+                      editable={!loading}
+                    />
+
+                    {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
+
+                    <TouchableOpacity
+                      style={[
+                        styles.button,
+                        { backgroundColor: Colors[theme].tint },
+                        loading && styles.buttonDisabled,
+                      ]}
+                      onPress={handleVerifyOtp}
+                      disabled={loading}>
+                      <ThemedText
+                        style={styles.buttonText}
+                        lightColor="#FFFFFF"
+                        darkColor="#FFFFFF">
+                        {loading ? 'Verifying...' : 'Verify Code'}
+                      </ThemedText>
+                      {loading && <ActivityIndicator color="#FFFFFF" style={styles.spinner} />}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => setOtpSent(false)}
+                      style={styles.switchButton}
+                      disabled={loading}>
+                      <ThemedText style={[styles.switchText, loading && styles.textDisabled]}>
+                        Try a different email
+                      </ThemedText>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
             </ThemedView>
           </Pressable>
         </KeyboardAvoidingView>
@@ -281,9 +281,14 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   textDisabled: {
-    opacity: 0.7,
+    opacity: 0.5,
   },
   spinner: {
     marginLeft: 8,
+  },
+  otpMessage: {
+    textAlign: 'center',
+    marginBottom: 16,
+    fontSize: 14,
   },
 });

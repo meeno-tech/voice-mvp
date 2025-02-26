@@ -11,6 +11,8 @@ interface AuthContextType {
   loading: boolean;
   signIn: {
     email: (email: string, password: string) => Promise<void>;
+    otp: (email: string) => Promise<void>;
+    verifyOtp: (email: string, token: string) => Promise<void>;
     google: () => Promise<void>;
     apple: () => Promise<void>;
     github: () => Promise<void>;
@@ -111,12 +113,81 @@ export function AuthProvider({ children }: PropsWithChildren) {
         if (error) throw error;
 
         if (user) {
-          mixpanel.identify(user.id);
-          mixpanel.setUserProperties({
-            auth_method: 'email',
-            signed_up_at: user.created_at,
+          try {
+            // TODO refactor the initialize and identify behavior to be handled in the mixpanel service
+            // Initialize mixpanel first if needed
+            await mixpanel.initialize();
+
+            // Then identify the user
+            mixpanel.identify(user.id);
+            mixpanel.setUserProperties({
+              auth_method: 'email',
+              signed_up_at: user.created_at,
+            });
+            mixpanel.track('Sign In', { method: 'email' });
+          } catch (mixpanelError) {
+            // Log but don't fail authentication if mixpanel has issues
+            console.error('Mixpanel error:', mixpanelError);
+          }
+        }
+      },
+      otp: async (email: string) => {
+        console.log('Using Supabase URL:', process.env.SUPABASE_URL);
+        try {
+          console.log('Requesting OTP for:', email);
+
+          const response = await supabase.auth.signInWithOtp({
+            email,
+            options: {
+              shouldCreateUser: true,
+              emailRedirectTo: undefined,
+            },
           });
-          mixpanel.track('Sign In', { method: 'email' });
+
+          if (response.error) throw response.error;
+
+          console.log('OTP sent successfully to:', email);
+
+          // Track OTP request
+          mixpanel.track('OTP Requested', {
+            timestamp: new Date().toISOString(),
+            platform: Platform.OS,
+          });
+        } catch (error) {
+          console.error('Error sending OTP:', error);
+          throw error;
+        }
+      },
+      verifyOtp: async (email: string, token: string) => {
+        try {
+          const { data, error } = await supabase.auth.verifyOtp({
+            email,
+            token,
+            type: 'email',
+          });
+
+          if (error) throw error;
+
+          if (data.user) {
+            try {
+              // Initialize mixpanel first if needed
+              await mixpanel.initialize();
+
+              // Then identify the user
+              mixpanel.identify(data.user.id);
+              mixpanel.setUserProperties({
+                auth_method: 'email_otp',
+                signed_up_at: data.user.created_at,
+              });
+              mixpanel.track('Sign In', { method: 'email_otp' });
+            } catch (mixpanelError) {
+              // Log but don't fail authentication if mixpanel has issues
+              console.error('Mixpanel error:', mixpanelError);
+            }
+          }
+        } catch (error) {
+          console.error('Error verifying OTP:', error);
+          throw error;
         }
       },
       google: async () => {
@@ -175,9 +246,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
     },
     signOut: async () => {
       try {
-        mixpanel.track('Sign Out');
-        mixpanel.reset();
+        // Track the event before signing out
+        try {
+          await mixpanel.initialize();
+          mixpanel.track('Sign Out');
+          mixpanel.reset();
+        } catch (mixpanelError) {
+          console.error('Mixpanel error during sign out:', mixpanelError);
+        }
+
+        // Sign out from Supabase
         await supabase.auth.signOut();
+
+        // Immediately update local state
+        setSession(null);
+        setUser(null);
+
+        console.log('User signed out successfully');
       } catch (error) {
         console.error('Error signing out:', error);
       }

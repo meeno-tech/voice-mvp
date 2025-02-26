@@ -31,7 +31,7 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
   const [error, setError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
 
-  const { signIn } = useAuth();
+  const { signIn, isAnonymous } = useAuth();
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
 
@@ -107,12 +107,23 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
             <ThemedView style={styles.container}>
               <View style={styles.header}>
                 <ThemedText type="subtitle">
-                  {otpSent ? 'Enter Verification Code' : 'Continue with Email'}
+                  {otpSent
+                    ? 'Enter Verification Code'
+                    : isAnonymous
+                      ? 'Create Your Account'
+                      : 'Continue with Email'}
                 </ThemedText>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                   <IconSymbol name="xmark" size={20} color={Colors[theme].text} />
                 </TouchableOpacity>
               </View>
+
+              {isAnonymous && !otpSent && (
+                <ThemedText style={styles.anonymousMessage}>
+                  You&lsquo;re currently using an anonymous account. Link it to an email to save
+                  your progress.
+                </ThemedText>
+              )}
 
               <View style={styles.form}>
                 {!otpSent ? (
@@ -290,5 +301,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
     fontSize: 14,
+  },
+  anonymousMessage: {
+    marginBottom: 16,
+    fontSize: 14,
+    textAlign: 'center',
+    opacity: 0.8,
   },
 });

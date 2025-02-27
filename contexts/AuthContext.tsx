@@ -30,6 +30,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isEmailChange, setIsEmailChange] = useState(false);
 
   useEffect(() => {
     // Auto sign-in anonymously when no user is present and loading is complete
@@ -153,6 +154,51 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   };
 
+  const handleAnonymousUserAuth = async (email: string) => {
+    console.log('Handling anonymous user authentication with email:', email);
+
+    try {
+      // Try to update the anonymous user with the email
+      const { error } = await supabase.auth.updateUser({ email });
+
+      // If successful, mark as email change
+      if (!error) {
+        setIsEmailChange(true);
+        console.log('Anonymous user updated with email, verification email sent');
+        return;
+      }
+
+      // If email exists, send a regular OTP
+      /*
+       * When using updateUser on an email that already exists,
+       * Supabase prevents it because it would create
+       * a duplicate user. The OTP approach is the correct
+       * way to authenticate with an existing account, as it verifies
+       * the user owns that email address without trying to modify
+       * another user's account.
+       *
+       * TODO migrate data manually when xp/awards exists
+       */
+      if (
+        error.message.includes('already been registered') ||
+        error.message.includes('already exists')
+      ) {
+        console.log('Email already exists, sending regular OTP');
+        await supabase.auth.signInWithOtp({ email });
+        return;
+      }
+
+      // Any other error
+      throw error;
+    } catch (error) {
+      console.error(
+        'Authentication request failed:',
+        error instanceof Error ? error.message : String(error)
+      );
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     session,
     user,
@@ -198,20 +244,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
             throw new Error('Authentication error: No active user session');
           }
 
-          console.log('Converting anonymous user to permanent user with email:', email);
+          setIsEmailChange(false);
 
-          const { error } = await supabase.auth.updateUser({
-            email,
-          });
-
-          if (error) {
-            console.error('Email verification request failed:', error.message);
-            throw error;
+          if (user.is_anonymous === true) {
+            await handleAnonymousUserAuth(email);
+          } else {
+            // Catches non_anonymous users...shouldn't happen
+            console.log('Regular user authentication with email:', email);
+            const { error } = await supabase.auth.signInWithOtp({ email });
+            if (error) throw error;
           }
 
           console.log('Email verification request sent successfully to:', email);
-
-          // Track OTP request
           mixpanel.track('OTP Requested', {
             timestamp: new Date().toISOString(),
             platform: Platform.OS,
@@ -223,16 +267,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
       },
       verifyOtp: async (email: string, token: string) => {
         try {
-          if (!user) {
-            console.error('No user found - user should be anonymous at this point');
-            throw new Error('Authentication error: No active user session');
-          }
+          console.log('Verifying OTP for email:', email);
 
-          console.log('Verifying email update for anonymous user');
+          //updateUser requires email_change, existing user requires magiclink (OTP)
+          const otpType = isEmailChange ? 'email_change' : 'magiclink';
+
           const { data, error } = await supabase.auth.verifyOtp({
             email,
             token,
-            type: 'email_change', // use email_change instead of email bc update
+            type: otpType,
           });
 
           if (error) throw error;
@@ -246,9 +289,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
               mixpanel.setUserProperties({
                 auth_method: 'email_otp',
                 signed_up_at: data.user.created_at,
-                was_anonymous: true,
+                was_anonymous: isEmailChange,
               });
-              mixpanel.track('Anonymous User Converted', { method: 'email_otp' });
+
+              if (isEmailChange) {
+                mixpanel.track('Anonymous User Converted', { method: 'email_otp' });
+              } else {
+                mixpanel.track('Sign In', { method: 'email_otp' });
+              }
+              setIsEmailChange(false);
             } catch (mixpanelError) {
               console.error('Mixpanel error:', mixpanelError);
             }

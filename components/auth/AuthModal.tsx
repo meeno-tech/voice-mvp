@@ -30,20 +30,21 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(true);
 
   const { signIn, isAnonymous } = useAuth();
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
 
-  // Reset form when modal is opened
   useEffect(() => {
     if (visible) {
       setEmail('');
       setOtpCode('');
       setError('');
       setOtpSent(false);
+      setIsSignUp(isAnonymous);
     }
-  }, [visible]);
+  }, [visible, isAnonymous]);
 
   const handleSendOtp = async () => {
     if (!email) {
@@ -106,31 +107,26 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
           <Pressable onPress={(e) => e.stopPropagation()}>
             <ThemedView style={styles.container}>
               <View style={styles.header}>
-                <ThemedText type="subtitle">
-                  {otpSent
-                    ? 'Enter Verification Code'
-                    : isAnonymous
-                      ? 'Create Your Account'
-                      : 'Continue with Email'}
-                </ThemedText>
+                <View style={styles.headerTitleContainer}>
+                  <ThemedText type="subtitle" style={styles.headerTitle}>
+                    {otpSent
+                      ? 'Enter Verification Code'
+                      : isSignUp
+                        ? `Create your free Vokal${isSignUp ? ' account' : ''}`
+                        : 'Sign in to Vokal'}
+                  </ThemedText>
+                </View>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                   <IconSymbol name="xmark" size={20} color={Colors[theme].text} />
                 </TouchableOpacity>
               </View>
-
-              {isAnonymous && !otpSent && (
-                <ThemedText style={styles.anonymousMessage}>
-                  You&lsquo;re currently using an anonymous account. Link it to an email to save
-                  your progress.
-                </ThemedText>
-              )}
 
               <View style={styles.form}>
                 {!otpSent ? (
                   <>
                     <TextInput
                       style={[styles.input, { color: Colors[theme].text }]}
-                      placeholder="Email"
+                      placeholder="yoda@dagobah.com"
                       placeholderTextColor={Colors[theme].tabIconDefault}
                       value={email}
                       onChangeText={setEmail}
@@ -153,10 +149,21 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
                         style={styles.buttonText}
                         lightColor="#FFFFFF"
                         darkColor="#FFFFFF">
-                        {loading ? 'Sending...' : 'Continue with Email'}
+                        {loading ? '' : 'Continue with Email'}
                       </ThemedText>
                       {loading && <ActivityIndicator color="#FFFFFF" style={styles.spinner} />}
                     </TouchableOpacity>
+
+                    <View style={styles.switchModeContainer}>
+                      <ThemedText style={styles.switchModeText}>
+                        {isSignUp ? 'Already have an account?  ' : 'No account yet?  '}
+                      </ThemedText>
+                      <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} disabled={loading}>
+                        <ThemedText style={styles.switchModeLink}>
+                          {isSignUp ? 'Log in' : 'Sign up'}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    </View>
                   </>
                 ) : (
                   <>
@@ -225,7 +232,9 @@ const styles = StyleSheet.create({
   },
   container: {
     width: '90%',
-    maxWidth: 400,
+    maxWidth: 350,
+    minHeight: 250,
+    minWidth: 200,
     borderRadius: 16,
     padding: 24,
     marginHorizontal: 20,
@@ -247,11 +256,18 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 24,
   },
+  headerTitleContainer: {
+    flex: 1,
+    paddingRight: 24,
+  },
+  headerTitle: {
+    fontWeight: '600',
+  },
   closeButton: {
-    padding: 8,
+    marginTop: -8,
   },
   form: {
     gap: 16,
@@ -307,5 +323,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     opacity: 0.8,
+  },
+  switchModeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  switchModeText: {
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  switchModeLink: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: Colors.light.tint,
+    textDecorationLine: 'underline',
   },
 });

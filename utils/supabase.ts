@@ -1,5 +1,5 @@
-import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
+import 'react-native-url-polyfill/auto';
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore

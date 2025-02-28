@@ -21,7 +21,7 @@ import { mixpanel } from 'utils/mixpanel';
 import { supabase } from 'utils/supabase';
 
 export default function HomeScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAnonymous } = useAuth();
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const router = useRouter();
@@ -205,7 +205,7 @@ export default function HomeScreen() {
         </View>
         {dropdownVisible && (
           <View className="absolute right-0 top-[3rem] z-50 rounded-md bg-white shadow-lg">
-            {user ? (
+            {user && !isAnonymous ? (
               <TouchableOpacity
                 className="flex-row items-center space-x-2 px-4 py-3"
                 onPress={signOut}>

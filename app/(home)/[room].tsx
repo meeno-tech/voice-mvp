@@ -216,9 +216,9 @@ export default function RoomScreen() {
   const ExitButton = () => (
     <TouchableOpacity
       className={`
-        bg-black-12 absolute bottom-8 left-1/2 h-16
-        w-[72px] -translate-x-[35px] items-center justify-center 
-        rounded-full md:bottom-10
+        absolute bottom-8 left-1/2 h-16 w-[72px]
+        -translate-x-[35px] items-center justify-center rounded-full 
+        bg-black-12 md:bottom-10
         ${Platform.OS === 'web' ? 'cursor-pointer' : ''}
       `}
       onPress={handleDisconnect}>
@@ -255,7 +255,7 @@ export default function RoomScreen() {
       />
 
       {error && (
-        <View className="bg-error z-1 mx-5 rounded-lg px-4 py-4">
+        <View className="z-1 mx-5 rounded-lg bg-error px-4 py-4">
           <ThemedText className="text-center text-white">{error}</ThemedText>
         </View>
       )}

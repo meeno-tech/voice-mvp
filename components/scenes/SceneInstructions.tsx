@@ -14,6 +14,11 @@ interface SceneInstructionsProps {
 export function SceneInstructions({ scene }: SceneInstructionsProps) {
   // Map scene IDs to specific instructions
   const getInstructions = (scene: Scene): string => {
+    // For custom scenes, prioritize the scene description
+    if (scene.id === 'custom') {
+      return scene.description;
+    }
+
     const instructionsMap: Record<string, string> = {
       '1': 'The girl behind you in line looks cold, and seems like she wants to talk to you',
       '2': 'The show is about to start, and she seems disappointed at not having a seat',

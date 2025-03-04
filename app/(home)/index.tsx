@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { AuthModal } from 'components/auth/AuthModal';
 import VokalSceneCard from 'components/scenes/VokalSceneCard';
+import CreateRoomButton from 'components/ui/CreateRoomButton';
 import { useAuth } from 'contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import * as Share from 'expo-sharing';
@@ -113,7 +114,7 @@ export default function HomeScreen() {
       });
 
       const timestamp = Date.now();
-      const roomPath = `/(home)/${scene.roomName.toLowerCase()}?t=${timestamp}`;
+      const roomPath = `/(home)/${scene.roomName}?t=${timestamp}`;
 
       if (Platform.OS === 'web') {
         const baseUrl = window.location.origin;
@@ -289,6 +290,9 @@ export default function HomeScreen() {
           </View>
         </View>
       </View>
+
+      {/* Create Room Button */}
+      <CreateRoomButton />
 
       {/* Footer - Added safe padding to account for Safari's bottom bar */}
       <View className="pb-safe bg-transparent p-1 md:px-16">

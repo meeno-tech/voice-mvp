@@ -79,21 +79,84 @@ export default function RoomScreen() {
       const hasPermissions = await requestPermissions();
       if (!hasPermissions) return;
 
+      // Get the room parameter from the URL
+      const roomParam = params.room?.toString() || '';
+
+      // Check if this is a custom room with metadata
+      const metadata = params.metadata?.toString();
+      const isCustomRoom = !!metadata;
+
+      if (isCustomRoom) {
+        try {
+          // This is a custom room with metadata
+          const customMetadata = JSON.parse(decodeURIComponent(metadata));
+
+          // Get the base room name (without the unique ID)
+          const baseRoomName = getBaseRoomName(roomParam);
+
+          // Helper function to capitalize each word
+          const capitalizeWords = (str: string) => {
+            return str
+              .split(' ')
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+          };
+
+          // Create a custom scene object
+          const customScene: Scene = {
+            id: 'custom',
+            title: customMetadata.name
+              ? `Conversation with ${customMetadata.name}`
+              : customMetadata.custom_room_name
+                ? `Custom: ${capitalizeWords(customMetadata.custom_room_name.replace(/-/g, ' '))}`
+                : 'Custom Conversation',
+            description: customMetadata.scene_description || 'A custom conversation',
+            roomName: baseRoomName, // Use the base room name (without the unique ID)
+            difficulty: 'beginner',
+            category: 'social', // Use 'social' as the default category for custom rooms
+          };
+
+          setScene(customScene);
+          setUniqueRoomName(roomParam); // Keep the full unique room name for connections
+          console.log('Initializing custom room with metadata:', {
+            baseRoomName,
+            fullRoomName: roomParam,
+            metadata: customMetadata,
+          });
+          connectToScene(customScene, roomParam);
+          return;
+        } catch (error) {
+          console.error('Error parsing custom room metadata:', error);
+          // Continue to check for predefined scenes
+        }
+      }
+
+      // For standard scenes (not custom rooms), check if the room name contains a separator
+      // If it does, extract the base room name
+      const baseRoomName = roomParam.includes(':') ? getBaseRoomName(roomParam) : roomParam;
+
+      // Check for predefined scenes using the base room name
       const foundScene = mockScenes.find(
-        (s) => s.roomName.toLowerCase() === params.room?.toString().toLowerCase()
+        (s) => s.roomName.toLowerCase() === baseRoomName.toLowerCase()
       );
 
       if (foundScene) {
         setScene(foundScene);
-        const uniqueRoomId = generateUniqueRoomName(foundScene.roomName);
+        // If the room already has a unique ID (contains separator), use it
+        // Otherwise generate a new unique room ID
+        const uniqueRoomId = roomParam.includes(':')
+          ? roomParam
+          : generateUniqueRoomName(foundScene.roomName);
         setUniqueRoomName(uniqueRoomId);
-        console.log('Generated unique room:', {
-          baseRoomName: getBaseRoomName(uniqueRoomId),
+        console.log('Initializing standard scene:', {
+          baseRoomName,
           uniqueRoomId,
+          isCustomRoom: false,
         });
         connectToScene(foundScene, uniqueRoomId);
       } else {
         setError('Scene not found');
+        console.error('Scene not found for room:', roomParam, 'base name:', baseRoomName);
         router.back();
       }
     };
@@ -121,15 +184,43 @@ export default function RoomScreen() {
         );
       }
 
+      // Get metadata from query parameters if available
+      let simulationConfig;
+      const metadataParam = params.metadata?.toString();
+
+      if (metadataParam) {
+        try {
+          // Use the metadata from the query parameters
+          simulationConfig = JSON.parse(decodeURIComponent(metadataParam));
+        } catch (error) {
+          console.error('Error parsing metadata from query parameters:', error);
+        }
+      }
+
+      // Only send metadata if it was explicitly provided in the URL
+      const requestBody: {
+        scene_name: string;
+        participant_name: string;
+        metadata?: string;
+      } = {
+        scene_name: uniqueRoomId,
+        participant_name: `user_${Math.floor(Math.random() * 100000)}`,
+      };
+
+      // Only include metadata if it was explicitly provided
+      if (simulationConfig) {
+        requestBody.metadata = JSON.stringify(simulationConfig);
+        console.log('Using custom metadata for room:', uniqueRoomId, simulationConfig);
+      } else {
+        console.log('Using standard scene without metadata for room:', uniqueRoomId);
+      }
+
       const response = await fetch(`${apiUrl}/lk-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          scene_name: uniqueRoomId,
-          participant_name: `user_${Math.floor(Math.random() * 100000)}`,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {

@@ -4,6 +4,7 @@ import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
 import { WaveVisualizer } from 'components/WaveVisualizer';
 import { Audio } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Room } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -208,7 +209,6 @@ export default function DemoScreen() {
 
     return (
       <View className="z-1 flex-1 items-center justify-center">
-        <View className="absolute inset-0 bg-white" />
         <View className="w-full items-center px-4 py-8">
           <ThemedText
             type="title"
@@ -262,7 +262,11 @@ export default function DemoScreen() {
 
   return (
     <ThemedView className="flex-1">
-      {/* Remove the simple background */}
+      <LinearGradient
+        colors={['#E7DFE2', '#E7DFE2', '#FD4C18']}
+        className="absolute inset-0"
+        locations={[0, 0.6, 1]}
+      />
 
       {error && (
         <View className="z-1 mx-5 rounded-lg bg-error px-4 py-4">
@@ -286,7 +290,7 @@ export default function DemoScreen() {
         </LiveKitRoom>
       ) : (
         <View className="flex-1 items-center justify-center">
-          <ThemedText>{isConnecting ? 'Connecting...' : 'Initializing...'}</ThemedText>
+          <ThemedText>{isConnecting ? 'Connecting to demo...' : 'Initializing...'}</ThemedText>
         </View>
       )}
     </ThemedView>

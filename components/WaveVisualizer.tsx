@@ -26,7 +26,6 @@ export const WaveVisualizer = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const pathOpacity = useSharedValue(0.7);
 
-  // Create animated values for each control point
   const controlPoints = useRef(
     Array(pointCount)
       .fill(0)
@@ -44,6 +43,12 @@ export const WaveVisualizer = ({
     speakingEndTime: 0,
     shapeCounter: 0,
     lastShapeTime: 0,
+    convergenceFactor: 1.0, // Starts at 1.0 (full variation) and decreases over time
+    targetShape: Array(pointCount).fill(height / 2), // The shape we're converging toward
+    isFirstShape: true, // Track if this is the first shape after initialization
+    hasGeneratedInitialShape: false, // Track if we've generated the initial shape
+    hasSpokenAtLeastOnce: false, // Track if the user has spoken at least once
+    finalShapeSeed: Math.floor(Math.random() * 1000000), // Seed for the final shape
   });
 
   // Generate a smooth path from control points
@@ -68,15 +73,11 @@ export const WaveVisualizer = ({
     return path;
   };
 
-  // State to hold the current path data
   const [pathData, setPathData] = useState(() => {
-    // Initialize with a straight line
     return generatePath(Array(pointCount).fill({ y: height / 2 }));
   });
 
-  // Update path data when animated values change
   useEffect(() => {
-    // Create a function to update the path
     const updatePath = () => {
       const currentPoints = controlPoints.current.map((point) => ({
         y: point.y.value,
@@ -84,7 +85,6 @@ export const WaveVisualizer = ({
       setPathData(generatePath(currentPoints));
     };
 
-    // Set up an interval to update the path regularly
     const pathUpdateInterval = setInterval(updatePath, 16); // ~60fps
 
     return () => {
@@ -92,13 +92,42 @@ export const WaveVisualizer = ({
     };
   }, [height, pointCount, screenWidth]);
 
+  // Generate the final target shape that we'll converge toward
+  const generateFinalTargetShape = () => {
+    console.log('Generating final target shape with seed:', voiceData.current.finalShapeSeed);
+
+    let seed = voiceData.current.finalShapeSeed;
+    const random = () => {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    };
+
+    // Generate a complex, interesting target shape
+    for (let i = 0; i < pointCount; i++) {
+      const position = i / (pointCount - 1);
+      const basePhase = random() * Math.PI;
+      let targetY = Math.sin(position * Math.PI * 2 + basePhase) * height * 0.35;
+      targetY += Math.sin(position * Math.PI * 3.7 + basePhase * 1.5) * height * 0.2;
+      targetY += Math.sin(position * Math.PI * 5.3 + basePhase * 0.7) * height * 0.1;
+
+      targetY += (random() * 2 - 1) * height * 0.15;
+
+      const edgeFactor = Math.min(i, pointCount - 1 - i) / (pointCount / 3);
+      const centeringForce = 1 - Math.min(1, edgeFactor);
+      targetY *= 1 - centeringForce * 0.6;
+
+      // Ensure the point is at least a minimum distance from center
+      const minDistanceFromCenter = height * 0.12;
+      if (Math.abs(targetY) < minDistanceFromCenter) {
+        targetY = (targetY >= 0 ? 1 : -1) * minDistanceFromCenter;
+      }
+
+      voiceData.current.targetShape[i] = height / 2 + targetY;
+    }
+  };
+
   // Set new target positions and animate to them
   const animateToNewWave = (baseAmplitude = 0.3, variationAmount = 0.15, seed = Date.now()) => {
-    console.log(
-      `Animating to new wave: amplitude=${baseAmplitude}, variation=${variationAmount}, seed=${seed}`
-    );
-
-    // Increment shape counter
     voiceData.current.shapeCounter++;
     voiceData.current.lastShapeTime = Date.now();
 
@@ -108,52 +137,97 @@ export const WaveVisualizer = ({
       return seed / 233280;
     };
 
+    if (voiceData.current.isFirstShape) {
+      // Generate the final target shape
+      generateFinalTargetShape();
+      voiceData.current.isFirstShape = false;
+      voiceData.current.convergenceFactor = 1.0;
+    } else {
+      // First speaking event: convergence = 1.0 (initial shape)
+      // Second speaking event: convergence = 0.8 (20% refinement)
+      // Third speaking event: convergence = 0.6 (40% refinement)
+      // Fourth speaking event: convergence = 0.4 (60% refinement)
+
+      if (voiceData.current.shapeCounter === 2) {
+        voiceData.current.convergenceFactor = 0.8;
+      } else if (voiceData.current.shapeCounter === 3) {
+        voiceData.current.convergenceFactor = 0.6;
+      } else if (voiceData.current.shapeCounter === 4) {
+        voiceData.current.convergenceFactor = 0.4;
+      } else {
+        voiceData.current.convergenceFactor = 0.2;
+      }
+
+      console.log(
+        `Subtle refinement: now at ${(100 - voiceData.current.convergenceFactor * 100).toFixed(0)}% refinement`
+      );
+    }
+
     // Generate new target positions
     controlPoints.current.forEach((point, i) => {
       // Cancel any ongoing animations
       cancelAnimation(point.y);
 
-      // Position in the array (0 to 1)
       const position = i / (pointCount - 1);
 
       // Use the shape counter to create different patterns
-      const phaseShift = voiceData.current.shapeCounter * 0.7;
+      // For subsequent shapes, use a phase shift that's closer to the original
+      // to maintain similarity with the first shape
+      const initialPhaseShift = 0.7;
+      const phaseVariation = voiceData.current.convergenceFactor * 0.5;
+      const phaseShift =
+        initialPhaseShift + phaseVariation * Math.sin(voiceData.current.shapeCounter);
 
       // Base wave using sine function with phase shift
-      let targetOffset =
-        Math.sin(position * Math.PI * 2 + phaseShift) * height * baseAmplitude * 0.7;
-      targetOffset +=
-        Math.sin(position * Math.PI * 3.7 + phaseShift * 1.5) * height * baseAmplitude * 0.3;
+      const minAmplitude = 0.2;
+      const effectiveAmplitude = Math.max(minAmplitude, baseAmplitude);
 
-      // Add controlled variation
-      targetOffset += (random() * 2 - 1) * height * variationAmount;
+      let targetOffset =
+        Math.sin(position * Math.PI * 2 + phaseShift) * height * effectiveAmplitude * 0.7;
+      targetOffset +=
+        Math.sin(position * Math.PI * 3.7 + phaseShift * 1.5) * height * effectiveAmplitude * 0.3;
+
+      const minVariation = 0.08;
+      const effectiveVariation = Math.max(
+        minVariation,
+        variationAmount * voiceData.current.convergenceFactor
+      );
+      targetOffset += (random() * 2 - 1) * height * effectiveVariation;
 
       // Keep endpoints closer to center
       const edgeFactor = Math.min(i, pointCount - 1 - i) / (pointCount / 3);
       const centeringForce = 1 - Math.min(1, edgeFactor);
-      targetOffset *= 1 - centeringForce * 0.8;
+      targetOffset *= 1 - centeringForce * 0.7;
 
-      // Calculate new target
-      const newTarget = height / 2 + targetOffset;
+      // Calculate new target - blend between random shape and target shape based on convergence
+      const randomTarget = height / 2 + targetOffset;
+      let finalTarget;
 
-      // Ensure significant movement (at least 15% of height)
-      const minMovement = height * 0.15;
-      const currentY = point.y.value;
-      let finalTarget = newTarget;
+      if (voiceData.current.shapeCounter === 1) {
+        finalTarget = randomTarget;
+      } else {
+        const refinementFactor = Math.pow(1 - voiceData.current.convergenceFactor, 0.8) * 0.5;
+        finalTarget =
+          randomTarget * (1 - refinementFactor) +
+          voiceData.current.targetShape[i] * refinementFactor;
+      }
+      const distanceFromCenter = Math.abs(finalTarget - height / 2);
+      const minDistanceFromCenter = height * 0.1;
 
-      if (Math.abs(currentY - newTarget) < minMovement) {
-        finalTarget = newTarget + (random() > 0.5 ? 1 : -1) * minMovement;
+      if (distanceFromCenter < minDistanceFromCenter) {
+        const direction = finalTarget >= height / 2 ? 1 : -1;
+        finalTarget = height / 2 + direction * minDistanceFromCenter;
       }
 
-      // Animate to the new target with easing
+      // Faster animations for early shapes, slower for refinements
+      const duration = 600 + random() * 300 + (1 - voiceData.current.convergenceFactor) * 400;
       point.y.value = withTiming(finalTarget, {
-        duration: 800 + random() * 400, // Slightly different duration for each point
+        duration: duration,
         easing: Easing.bezier(0.25, 0.1, 0.25, 1),
       });
     });
   };
 
-  // Set to straight line
   const animateToStraightLine = (immediate = false) => {
     controlPoints.current.forEach((point) => {
       if (immediate) {
@@ -172,6 +246,7 @@ export const WaveVisualizer = ({
     console.log(
       `Generating voice shape (history length=${voiceData.current.volumeHistory.length})`
     );
+    voiceData.current.hasSpokenAtLeastOnce = true;
 
     // If we don't have enough data, use default values
     if (voiceData.current.volumeHistory.length < 2) {
@@ -192,9 +267,14 @@ export const WaveVisualizer = ({
 
     // Use voice characteristics with minimum values to ensure visible waves
     const baseAmplitude =
-      Math.max(0.25, Math.min(0.5, avgVolume * 0.6)) * (0.8 + Math.random() * 0.4);
+      Math.max(0.25, Math.min(0.5, avgVolume * 0.6)) *
+      (0.8 + Math.random() * 0.2) *
+      (0.6 + voiceData.current.convergenceFactor * 0.4);
+
     const variationAmount =
-      Math.max(0.15, Math.min(0.3, volumeVariance * 0.4)) * (0.8 + Math.random() * 0.4);
+      Math.max(0.15, Math.min(0.3, volumeVariance * 0.4)) *
+      (0.8 + Math.random() * 0.2) *
+      (0.5 + voiceData.current.convergenceFactor * 0.5);
 
     // Animate to new wave shape
     animateToNewWave(
@@ -202,14 +282,11 @@ export const WaveVisualizer = ({
       variationAmount,
       Date.now() + voiceData.current.shapeCounter * 1000
     );
-
-    // Reset the collected data
     voiceData.current.volumeHistory = [];
 
     console.log('Generated new wave shape');
   };
 
-  // Handle speaking state and audio level changes
   useEffect(() => {
     if (!localParticipant.localParticipant) return;
 
@@ -224,12 +301,10 @@ export const WaveVisualizer = ({
         voiceData.current.volumeHistory.push(adjustedLevel);
         voiceData.current.lastSignificantLevel = Date.now();
 
-        // Limit history size
         if (voiceData.current.volumeHistory.length > 20) {
           voiceData.current.volumeHistory.shift();
         }
 
-        // If not currently speaking, mark as speaking and record start time
         if (!isSpeaking) {
           console.log('Started speaking (from audio level)');
           setIsSpeaking(true);
@@ -237,10 +312,8 @@ export const WaveVisualizer = ({
         }
       }
 
-      // Check if we should consider the user to have stopped speaking
       const now = Date.now();
       if (isSpeaking && now - voiceData.current.lastSignificantLevel > 1000) {
-        // If no significant audio for 1 second, consider stopped speaking
         console.log('Stopped speaking (from audio level)');
         setIsSpeaking(false);
         voiceData.current.speakingEndTime = now;
@@ -258,17 +331,13 @@ export const WaveVisualizer = ({
       }
     };
 
-    // Also listen to the official speaking events
     const handleSpeakingChanged = () => {
       const isSpeakingNow = localParticipant.localParticipant.isSpeaking;
 
       console.log('Speaking state changed:', isSpeakingNow);
 
-      // If stopped speaking and we have data, generate a new shape
       if (!isSpeakingNow && isSpeaking) {
         console.log('Stopped speaking (from event)');
-
-        // Generate a new shape when the speaking event ends
         if (voiceData.current.volumeHistory.length > 0) {
           console.log('Generating shape from speaking event end');
           generateVoiceBasedShape();
@@ -276,42 +345,32 @@ export const WaveVisualizer = ({
         pathOpacity.value = withTiming(0.8, { duration: 500 });
       }
 
-      // If started speaking, slightly fade the line and clear history
       if (isSpeakingNow && !isSpeaking) {
         console.log('Started speaking (from event)');
-        // Clear volume history when starting to speak to collect fresh data
-        voiceData.current.volumeHistory = [];
         pathOpacity.value = withTiming(0.6, { duration: 300 });
       }
 
       setIsSpeaking(isSpeakingNow);
     };
 
-    // Set up event listeners
     localParticipant.localParticipant.on('isSpeakingChanged', handleSpeakingChanged);
-
-    // Initial setup - start with a straight line
     setIsSpeaking(localParticipant.localParticipant.isSpeaking);
-    animateToStraightLine(true);
+    if (!voiceData.current.hasGeneratedInitialShape) {
+      animateToStraightLine(true);
+      voiceData.current.hasGeneratedInitialShape = true;
+    }
 
-    // Generate an initial subtle wave after a short delay
-    setTimeout(() => {
-      animateToNewWave(0.15, 0.08, Date.now());
-    }, 1000);
-
-    // Monitor audio levels at regular intervals
     const audioMonitorInterval = setInterval(monitorAudioLevels, 100);
 
-    // Periodically generate a new shape if it's been a while since the last one
-    // This ensures the wave keeps moving even if there are issues
     const shapeRefreshInterval = setInterval(() => {
       const now = Date.now();
       const timeSinceLastShape = now - voiceData.current.lastShapeTime;
 
-      // If it's been more than 10 seconds since the last shape change, create a new subtle wave
-      if (timeSinceLastShape > 10000) {
+      // Only refresh if user has spoken at least once, it's been a while,
+      // and they're not currently speaking
+      if (voiceData.current.hasSpokenAtLeastOnce && timeSinceLastShape > 15000 && !isSpeaking) {
         console.log('Refreshing wave shape due to inactivity');
-        animateToNewWave(0.15, 0.08, now);
+        animateToNewWave(0.1, 0.05, now);
       }
     }, 5000);
 

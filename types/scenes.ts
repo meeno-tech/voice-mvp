@@ -46,9 +46,9 @@ export const mockScenes: Scene[] = [
   },
   {
     id: '4',
-    title: 'Physics with Donald Duck',
-    description: 'Learn about physics from Professor Donald Duck in this cold reading experience.',
-    roomName: 'cold-reading-physics',
+    title: 'Voice Analysis',
+    description: 'Learn about yourself',
+    roomName: 'voice-analysis',
     difficulty: 'beginner',
     category: 'social',
     imageUrl: 'donald-duck-physics.jpg',

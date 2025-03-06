@@ -83,10 +83,9 @@ export default function DemoScreen() {
         console.log('Cold reading scene not found in mockScenes, creating a fallback');
         const fallbackScene: Scene = {
           id: 'cold-reading',
-          title: 'Physics with Donald Duck',
-          description:
-            'Learn about physics from Professor Donald Duck in this cold reading experience.',
-          roomName: 'cold-reading-physics',
+          title: 'Voice Analysis',
+          description: 'Learn about yourself',
+          roomName: 'voice-analysis',
           difficulty: 'beginner',
           category: 'social',
           simulationType: 'cold_reading',

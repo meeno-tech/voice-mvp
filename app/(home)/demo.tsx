@@ -209,35 +209,17 @@ export default function DemoScreen() {
 
     return (
       <View className="z-1 flex-1 items-center justify-center">
-        <View className="w-full items-center px-4 py-8">
+        <View className="w-full items-center px-4 py-8 pt-16">
           <ThemedText
             type="title"
-            className="mb-8 w-4/5 text-center text-2xl font-semibold text-gray-800 md:text-4xl">
-            Sonic Aura Analysis
+            className="mb-10 w-full text-center text-xl font-bold text-gray-800 md:text-3xl"
+            style={{ fontFamily: 'DelaGothicOne', lineHeight: 46 }}>
+            Let&apos;s find your personality
           </ThemedText>
-          <View
-            className="mb-8 rounded-xl bg-white p-6"
-            style={{
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.1,
-              shadowRadius: 12,
-              elevation: 8,
-            }}>
+          <View className="mb-8">
             <CallExperience />
           </View>
-          <View className="mb-8 w-full px-4">
-            <ThemedText className="text-center text-base text-gray-600">
-              Speak freely as your voice patterns reveal hidden insights. The more you share, the
-              deeper the analysis.
-            </ThemedText>
-          </View>
           <View className="mb-4 w-full">
-            <View className="mb-2">
-              <ThemedText className="text-center text-sm text-gray-500">
-                Voice Pattern Signature
-              </ThemedText>
-            </View>
             <View className="h-32">
               <WaveVisualizer height={120} waveColor="rgba(100, 100, 255, 0.7)" pointCount={16} />
             </View>
@@ -250,13 +232,18 @@ export default function DemoScreen() {
   const ExitButton = () => (
     <TouchableOpacity
       className={`
-        absolute right-4 top-4 h-10 w-10
-        items-center justify-center rounded-full 
-        bg-gray-200
+        absolute bottom-8 left-1/2 h-16 w-[72px]
+        -translate-x-[35px] items-center justify-center rounded-full 
+        bg-black-12 md:bottom-10
         ${Platform.OS === 'web' ? 'cursor-pointer' : ''}
       `}
       onPress={handleDisconnect}>
-      <ThemedText className="text-center text-xl font-bold text-gray-700">✕</ThemedText>
+      <ThemedText
+        className="text-center text-2xl font-bold text-white"
+        lightColor="#FFFFFF"
+        darkColor="#FFFFFF">
+        ✕
+      </ThemedText>
     </TouchableOpacity>
   );
 

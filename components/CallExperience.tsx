@@ -18,7 +18,14 @@ export const CallExperience = () => {
     <View style={styles.container}>
       {/* Local participant (you) */}
       <View style={styles.participantContainer}>
-        <AudioVisualizer isLocal={true} barCount={5} color="#3B82F6" maxHeight={24} label="You" />
+        <AudioVisualizer
+          isLocal={true}
+          barCount={5}
+          color="#3B82F6"
+          maxHeight={30}
+          barWidth={6}
+          label="You"
+        />
       </View>
 
       {/* Remote participants */}
@@ -28,7 +35,8 @@ export const CallExperience = () => {
             participantIdentity={participant.identity}
             barCount={5}
             color="#FD4C18"
-            maxHeight={24}
+            maxHeight={30}
+            barWidth={6}
             label={participant.name || 'AI'}
             sensitivityMultiplier={3}
           />

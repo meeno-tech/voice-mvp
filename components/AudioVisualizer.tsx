@@ -132,7 +132,7 @@ export const AudioVisualizer = ({
   return (
     <View className="items-center justify-center">
       <View
-        className="mb-2 h-20 w-20 items-center justify-center rounded-full bg-white"
+        className="mb-2 h-24 w-24 items-center justify-center rounded-full bg-white"
         style={{
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
@@ -140,7 +140,7 @@ export const AudioVisualizer = ({
           shadowRadius: 2,
           elevation: 2,
         }}>
-        <View className="h-11 flex-row items-center justify-center">
+        <View className="h-14 flex-row items-center justify-center">
           {Array(barCount)
             .fill(0)
             .map((_, index) => (

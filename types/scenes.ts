@@ -10,6 +10,7 @@ export interface Scene {
   category: 'social' | 'dating' | 'networking';
   isLocked?: boolean;
   xpReward?: number;
+  simulationType?: string;
 }
 
 export const mockScenes: Scene[] = [
@@ -42,5 +43,16 @@ export const mockScenes: Scene[] = [
     category: 'dating',
     imageUrl: 'young-woman-supermarket-buying_432566-2544.jpg',
     isLocked: true,
+  },
+  {
+    id: '4',
+    title: 'Voice Analysis',
+    description: 'Learn about yourself',
+    roomName: 'voice-analysis',
+    difficulty: 'beginner',
+    category: 'social',
+    imageUrl: 'donald-duck-physics.jpg',
+    xpReward: 15,
+    simulationType: 'cold_reading',
   },
 ];

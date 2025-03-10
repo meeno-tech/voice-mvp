@@ -1,310 +1,137 @@
 import { Ionicons } from '@expo/vector-icons';
-import { AuthModal } from 'components/auth/AuthModal';
-import VokalSceneCard from 'components/scenes/VokalSceneCard';
-import { useAuth } from 'contexts/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import * as Share from 'expo-sharing';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Dimensions,
-  FlatList,
-  ImageBackground,
-  Platform,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewToken,
-} from 'react-native';
-import { Scene, mockScenes } from 'types/scenes';
+import { useEffect, useState } from 'react';
+import { Image, Linking, Text, TouchableOpacity, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { mixpanel } from 'utils/mixpanel';
 import { supabase } from 'utils/supabase';
 
 export default function HomeScreen() {
-  const { user, signOut, isAnonymous } = useAuth();
-  const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const router = useRouter();
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const [timeLeft, setTimeLeft] = useState('');
-  const [index, setIndex] = useState(0);
   const [brandImageUrl, setBrandImageUrl] = useState('');
-  const [cardDimensions, setCardDimensions] = useState({
-    cardWidth: 288,
-    cardHeight: 384,
-    desktopCardWidth: 288,
-    desktopCardHeight: 384,
-  });
-
-  useEffect(() => {
-    const targetDate = new Date('2025-02-23T11:30:00Z');
-
-    const updateTimer = () => {
-      const now = new Date();
-      const difference = targetDate.getTime() - now.getTime();
-
-      if (difference <= 0) {
-        setTimeLeft('SCENE AVAILABLE NOW');
-        return;
-      }
-
-      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-      setTimeLeft(`NEXT SCENE IN ${days}D ${hours}H ${minutes}M ${seconds}S`);
-    };
-
-    updateTimer();
-    const timer = setInterval(updateTimer, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const { data } = supabase.storage.from('app_assets').getPublicUrl('vokal-brand.webp');
     setBrandImageUrl(data.publicUrl);
-  }, []);
 
-  useEffect(() => {
-    const desktopCardWidth = 340;
-    const desktopCardHeight = 460;
-    const screenWidth = Dimensions.get('window').width;
-    const screenHeight = Dimensions.get('window').height;
-    const idealWidth = screenWidth - 40;
-    const idealHeight = screenHeight * 0.8;
-    const aspectRatio = 9 / 16;
-    const heightFromWidth = idealWidth / aspectRatio;
-    const cardHeight = Math.max(desktopCardHeight, Math.min(heightFromWidth, idealHeight));
-    const cardWidth = cardHeight * aspectRatio;
-
-    setCardDimensions({
-      cardWidth,
-      cardHeight,
-      desktopCardWidth,
-      desktopCardHeight,
-    });
-  }, []);
-
-  useEffect(() => {
     mixpanel.track('Home Page Viewed', {
-      user_logged_in: !!user,
-      platform: Platform.OS,
       timestamp: new Date().toISOString(),
     });
   }, []);
 
-  const handleScenePress = useCallback(
-    (scene: Scene) => {
-      if (scene.isLocked) {
-        mixpanel.track('Scene Locked Interaction', {
-          scene_id: scene.id,
-          scene_name: scene.title,
-        });
-        alert('This scene is currently locked.');
-        return;
-      }
+  const handleDemoPress = () => {
+    mixpanel.track('Demo Button Pressed');
+    router.push('/(home)/demo');
+  };
 
-      mixpanel.track('Scene Started', {
-        scene_id: scene.id,
-        scene_name: scene.title,
-        user_logged_in: !!user,
-      });
-
-      const timestamp = Date.now();
-      const roomPath = `/(home)/${scene.roomName.toLowerCase()}?t=${timestamp}`;
-
-      if (Platform.OS === 'web') {
-        const baseUrl = window.location.origin;
-        const fullPath = `${baseUrl}${roomPath}`;
-        window.location.href = fullPath;
-      } else {
-        router.push(roomPath);
-      }
-    },
-    [user]
-  );
-
-  const handlePrivacyPress = useCallback(() => {
-    if (Platform.OS === 'web') {
-      window.open('https://meeno.com/privacy', '_blank');
-    } else {
-      router.push('/legal/privacy');
-    }
-  }, [router]);
-
-  const handleTermsPress = useCallback(() => {
-    if (Platform.OS === 'web') {
-      window.open('https://meeno.com/terms', '_blank');
-    } else {
-      router.push('/legal/terms');
-    }
-  }, [router]);
-
-  const viewabilityConfigCallbackPairs = useRef([
-    {
-      viewabilityConfig: {
-        viewAreaCoveragePercentThreshold: 50,
-      },
-      onViewableItemsChanged: ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-        if (viewableItems.length > 0 && viewableItems[0].index !== null) {
-          setIndex(viewableItems[0].index);
-        }
-      },
-    },
-  ]);
-
-  const handleShare = async () => {
-    if (await Share.isAvailableAsync()) {
-      try {
-        await Share.shareAsync('https://be-vokal.com', {
-          dialogTitle: 'Share Vokal',
-          mimeType: 'text/plain',
-          UTI: 'public.plain-text',
-        });
-        mixpanel.track('App Shared');
-      } catch (error: unknown) {
-        console.error(error);
-        if (error instanceof Error) {
-          mixpanel.track('Share Failed', { error: error.message });
-        } else {
-          mixpanel.track('Share Failed', { error: 'Unknown error occurred' });
-        }
-      }
-    }
+  const openInstagram = () => {
+    mixpanel.track('Instagram Share Button Pressed');
+    Linking.openURL('https://www.instagram.com/be_vokal/');
   };
 
   return (
-    <View className="pt-safe flex flex-1 flex-col bg-white">
-      {/* Header */}
-      <View className="relative z-40 m-4">
-        <View className="flex-row items-center justify-between pl-2 md:px-16 md:py-6">
-          <ImageBackground
-            source={{ uri: brandImageUrl }}
-            className="h-[31px] w-[130px] justify-end"
-            resizeMode="contain"></ImageBackground>
-          <View className="flex-row items-center space-x-4">
-            <TouchableOpacity onPress={handleShare}>
-              <Ionicons
-                name="paper-plane-outline"
-                size={32}
-                color="black"
-                style={{ opacity: 0.2 }}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setDropdownVisible((prev) => !prev)}>
-              <Ionicons
-                name="person-circle-outline"
-                size={36}
-                color="black"
-                style={{ opacity: 0.2 }}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-        {dropdownVisible && (
-          <View className="absolute right-0 top-[3rem] z-50 rounded-md bg-white shadow-lg">
-            {user && !isAnonymous ? (
-              <TouchableOpacity
-                className="flex-row items-center space-x-2 px-4 py-3"
-                onPress={signOut}>
-                <Ionicons name="log-out-outline" size={20} color="#374151" />
-                <Text className="text-base font-medium text-gray-700">Logout</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                className="flex-row items-center space-x-2 px-4 py-3"
-                onPress={() => setShowAuthModal(true)}>
-                <Ionicons name="log-in-outline" size={20} color="#374151" />
-                <Text className="text-base font-medium text-gray-700">Login</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View>
+    <View className="flex-1">
+      <LinearGradient
+        colors={['rgba(101, 86, 248, 0.3)', 'rgba(255, 255, 255, 0)']}
+        style={{ position: 'absolute', width: '100%', height: '100%' }}
+      />
 
-      {/* Main Content */}
-      <View className="pb-safe flex-1">
-        {/* Mobile Carousel */}
-        <View className="w-full md:hidden">
-          <FlatList
-            className="pt-2"
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={mockScenes}
-            contentContainerStyle={{
-              paddingHorizontal: 20,
-              paddingBottom: 6,
-            }}
-            ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <VokalSceneCard
-                key={item.id}
-                scene={item}
-                onPress={() => handleScenePress(item)}
-                cardWidth={cardDimensions.cardWidth}
-                cardHeight={cardDimensions.cardHeight}
-              />
-            )}
-            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
-              useNativeDriver: false,
-            })}
-            viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-          />
-          {/* Page Indicator */}
-          <View className="flex-row items-center justify-center">
-            {mockScenes.map((_, i) => (
-              <View
-                key={i}
-                className={`mx-1 h-2 w-2 rounded-full transition-all ${
-                  i === index ? 'w-4 bg-gray-500' : 'bg-gray-300'
-                }`}
-              />
-            ))}
+      <View className="pt-safe flex-1 flex-col justify-between px-4 pb-8">
+        <View className="items-center pt-8">
+          {/* Logo */}
+          <View className="mt-16 items-center">
+            <Image
+              source={{ uri: brandImageUrl }}
+              className="h-[50px] w-[200px]"
+              resizeMode="contain"
+            />
           </View>
-          <View className="mt-2 items-center justify-center">
-            <Text className="text-sm font-bold text-gray-500">{timeLeft}</Text>
-          </View>
+
+          <Text className="mt-6 text-center text-[17px] font-light text-gray-700">
+            To start your journey, it&apos;s best to use headphones or find a quiet spot.
+          </Text>
         </View>
 
-        {/* Desktop Grid */}
-        <View className="pb-safe hidden scroll-p-4 overflow-auto md:flex md:flex-1">
-          <View className="mx-auto w-full max-w-[960px] p-0 lg:max-w-[1440px]">
-            <View className="grid grid-cols-2 place-items-center gap-6 px-4 pt-4 sm:px-0 lg:grid-cols-3">
-              {mockScenes.map((scene) => (
-                <VokalSceneCard
-                  key={scene.id}
-                  scene={scene}
-                  onPress={() => handleScenePress(scene)}
-                  cardWidth={cardDimensions.desktopCardWidth}
-                  cardHeight={cardDimensions.desktopCardHeight}
-                />
-              ))}
+        <View className="items-center">
+          <View className="w-full max-w-[340px] rounded-[28px] bg-white p-4 shadow-sm">
+            <View className="flex flex-col gap-8">
+              {/* Feature 1 */}
+              <View className="flex-row items-center gap-4">
+                <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
+                  <Ionicons name="heart-outline" size={20} color="#6556F8" />
+                </View>
+                <View className="flex-1 flex-col gap-0.5">
+                  <Text className="text-[16px] font-semibold text-black">
+                    Ditch the dating apps
+                  </Text>
+                  <Text className="text-[15px] text-gray-500">
+                    Enjoy real, lifelike conversations
+                  </Text>
+                </View>
+              </View>
+
+              {/* Feature 2 */}
+              <View className="flex-row items-center gap-4">
+                <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
+                  <Ionicons name="fitness-outline" size={20} color="#6556F8" />
+                </View>
+                <View className="flex-1 flex-col gap-0.5">
+                  <Text className="text-[16px] font-semibold text-black">
+                    Real-world challenges
+                  </Text>
+                  <Text className="text-[15px] text-gray-500">
+                    Grasp the skill of being yourself in any situation
+                  </Text>
+                </View>
+              </View>
+
+              {/* Feature 3 */}
+              <View className="flex-row items-center gap-4">
+                <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
+                  <Ionicons name="location-outline" size={20} color="#6556F8" />
+                </View>
+                <View className="flex-1 flex-col gap-0.5">
+                  <Text className="text-[16px] font-semibold text-black">
+                    City-specific conversation hacks
+                  </Text>
+                  <Text className="text-[15px] text-gray-500">
+                    Speak like a true local with our tips and tricks
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
-          <View className="items-center justify-center py-4">
-            <Text className="text-lg text-gray-500">{timeLeft}</Text>
-          </View>
-        </View>
-      </View>
 
-      {/* Footer - Added safe padding to account for Safari's bottom bar */}
-      <View className="pb-safe bg-transparent p-1 md:px-16">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-[10px] text-gray-400">© 2025 Vokal</Text>
-          <View className="flex-row space-x-2">
-            <TouchableOpacity onPress={handlePrivacyPress}>
-              <Text className="text-[10px] text-gray-400">Privacy</Text>
+          {/* Buttons */}
+          <View className="mt-6 w-full max-w-[340px] flex-col gap-3">
+            {/* Try Demo Button */}
+            <TouchableOpacity
+              className="h-[48px] w-full items-center justify-center rounded-[48px] bg-[#6556F8]"
+              onPress={handleDemoPress}>
+              <Text className="text-[16px] font-normal text-white">Try Demo</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleTermsPress}>
-              <Text className="text-[10px] text-gray-400">Terms</Text>
+
+            {/* Instagram Button */}
+            <TouchableOpacity
+              className="h-[52px] w-full flex-row items-center justify-center gap-2.5 rounded-[52px] px-6"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderWidth: 0.5,
+                borderColor: 'rgba(0, 0, 0, 0.15)',
+              }}
+              onPress={openInstagram}>
+              <Svg width="24" height="24" viewBox="0 0 24 24">
+                <Path
+                  d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"
+                  fill="#000"
+                />
+              </Svg>
+              <Text className="text-[17px] font-normal text-black">Follow on IG</Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
-      <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </View>
   );
 }

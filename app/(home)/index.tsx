@@ -1,19 +1,109 @@
 import { Ionicons } from '@expo/vector-icons';
+import { ResizeMode, Video } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Image, Linking, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Image, Linking, Platform, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { mixpanel } from 'utils/mixpanel';
 import { supabase } from 'utils/supabase';
 
+// Web-specific background video component to avoid findDOMNode warning
+const WebBackgroundVideo = ({ videoUrl }: { videoUrl: string }) => {
+  return Platform.OS === 'web' ? (
+    <div
+      style={{
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        zIndex: -1,
+        overflow: 'hidden',
+      }}>
+      <video
+        src={videoUrl}
+        autoPlay
+        loop
+        muted
+        playsInline
+        style={{
+          objectFit: 'cover',
+          width: '100%',
+          height: '100%',
+          opacity: 0.1,
+        }}
+      />
+    </div>
+  ) : null;
+};
+
+// Native background video component
+const NativeBackgroundVideo = ({ videoUrl }: { videoUrl: string }) => {
+  const videoRef = useRef<Video>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playAsync().catch((error) => {
+        console.warn('Error playing native video:', error);
+      });
+    }
+
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.unloadAsync();
+      }
+    };
+  }, [videoUrl]);
+
+  return (
+    <Video
+      ref={videoRef}
+      source={{ uri: videoUrl }}
+      resizeMode={ResizeMode.COVER}
+      isLooping
+      isMuted
+      shouldPlay
+      style={{
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        opacity: 0.15,
+        zIndex: -1,
+      }}
+      useNativeControls={false}
+      rate={1.0}
+      progressUpdateIntervalMillis={1000}
+    />
+  );
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const [brandImageUrl, setBrandImageUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoError, setVideoError] = useState(false);
+  const [videoLoading, setVideoLoading] = useState(true);
 
   useEffect(() => {
-    const { data } = supabase.storage.from('app_assets').getPublicUrl('vokal-brand.webp');
-    setBrandImageUrl(data.publicUrl);
+    // Load brand image
+    const { data: brandData } = supabase.storage
+      .from('app_assets')
+      .getPublicUrl('vokal-brand.webp');
+    setBrandImageUrl(brandData.publicUrl);
+
+    // Get video URL directly (simplified approach)
+    try {
+      const { data: videoData } = supabase.storage
+        .from('videos')
+        .getPublicUrl('scenes/pizza_bg.mp4');
+
+      console.log('Video URL:', videoData.publicUrl);
+      setVideoUrl(videoData.publicUrl);
+      setVideoLoading(false);
+    } catch (error) {
+      console.error('Error loading video:', error);
+      setVideoError(true);
+      setVideoLoading(false);
+    }
 
     mixpanel.track('Home Page Viewed', {
       timestamp: new Date().toISOString(),
@@ -32,12 +122,22 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1">
+      {/* Platform-specific background video */}
+      {!videoLoading &&
+        videoUrl &&
+        !videoError &&
+        (Platform.OS === 'web' ? (
+          <WebBackgroundVideo videoUrl={videoUrl} />
+        ) : (
+          <NativeBackgroundVideo videoUrl={videoUrl} />
+        ))}
+
       <LinearGradient
         colors={['rgba(101, 86, 248, 0.3)', 'rgba(255, 255, 255, 0)']}
-        style={{ position: 'absolute', width: '100%', height: '100%' }}
+        style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 0 }}
       />
 
-      <View className="pt-safe flex-1 flex-col justify-between px-4 pb-8">
+      <View className="pt-safe flex-1 flex-col justify-between px-4 pb-8" style={{ zIndex: 1 }}>
         <View className="items-center pt-8">
           {/* Logo */}
           <View className="mt-16 items-center">
@@ -117,7 +217,7 @@ export default function HomeScreen() {
               className="h-[52px] w-full flex-row items-center justify-center gap-2.5 rounded-[52px] px-6"
               style={{
                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderWidth: 0.5,
+                borderWidth: 1,
                 borderColor: 'rgba(0, 0, 0, 0.15)',
               }}
               onPress={openInstagram}>

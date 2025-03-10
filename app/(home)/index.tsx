@@ -137,8 +137,10 @@ export default function HomeScreen() {
         style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 0 }}
       />
 
-      <View className="pt-safe flex-1 flex-col justify-between px-4 pb-8" style={{ zIndex: 1 }}>
-        <View className="items-center pt-8">
+      <View
+        className="pt-safe flex-1 flex-col justify-between px-4 pb-8 md:items-center md:justify-center"
+        style={{ zIndex: 1 }}>
+        <View className="w-full items-center pt-8 md:max-w-[1200px]">
           {/* Logo */}
           <View className="mt-16 items-center">
             <Image
@@ -148,12 +150,12 @@ export default function HomeScreen() {
             />
           </View>
 
-          <Text className="mt-6 text-center text-[17px] font-light text-gray-700">
+          <Text className="mb-8 mt-6 max-w-[340px] text-center text-[17px] font-light text-gray-700">
             To start your journey, it&apos;s best to use headphones or find a quiet spot.
           </Text>
         </View>
 
-        <View className="items-center">
+        <View className="w-full items-center md:max-w-[1200px]">
           <View className="w-full max-w-[340px] rounded-[28px] bg-white p-4 shadow-sm">
             <View className="flex flex-col gap-8">
               {/* Feature 1 */}

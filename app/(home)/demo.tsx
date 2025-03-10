@@ -1,14 +1,14 @@
 import { LiveKitRoom, RoomAudioRenderer, useRoomContext } from '@livekit/components-react';
 import { CallExperience } from 'components/CallExperience';
+import { PostExperienceScreen } from 'components/PostExperienceScreen';
 import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
 import { WaveVisualizer } from 'components/WaveVisualizer';
 import { Audio } from 'expo-av';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Room } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, TouchableOpacity, View } from 'react-native';
+import { Animated, Platform, TouchableOpacity, View } from 'react-native';
 import { Scene, mockScenes } from 'types/scenes';
 import { mixpanel } from 'utils/mixpanel';
 import { generateUniqueRoomName, getBaseRoomName } from 'utils/roomUtils';
@@ -17,6 +17,7 @@ export default function DemoScreen() {
   const router = useRouter();
   const roomRef = useRef<Room | null>(null);
   const cleanupInProgressRef = useRef(false);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const [scene, setScene] = useState<Scene | null>(null);
   const [uniqueRoomName, setUniqueRoomName] = useState<string>('');
@@ -26,6 +27,7 @@ export default function DemoScreen() {
   } | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPostExperience, setShowPostExperience] = useState(false);
 
   const cleanupRoom = useCallback(async () => {
     if (cleanupInProgressRef.current || !roomRef.current) return;
@@ -183,11 +185,42 @@ export default function DemoScreen() {
         scene_name: scene?.title ?? null,
         room_id: uniqueRoomName,
       });
+
+      // If the disconnect was initiated by the user (X button), go to home
       await cleanupRoom();
       setConnectionDetails(null);
       router.replace('/(home)');
     } catch (error) {
       console.error('Error during disconnect:', error);
+      router.replace('/(home)');
+    }
+  };
+
+  // Handle when the AI ends the call
+  const handleAIEndedCall = async () => {
+    try {
+      // Start fade out animation
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }).start(async () => {
+        // Clean up room after fade out
+        await cleanupRoom();
+        setConnectionDetails(null);
+
+        // Show post-experience screen
+        setShowPostExperience(true);
+
+        // Fade back in
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }).start();
+      });
+    } catch (error) {
+      console.error('Error during AI call end transition:', error);
       router.replace('/(home)');
     }
   };
@@ -211,16 +244,26 @@ export default function DemoScreen() {
         <View className="w-full items-center px-4 py-8 pt-16">
           <ThemedText
             type="title"
-            className="mb-10 w-full text-center text-xl font-bold text-gray-800 md:text-3xl"
-            style={{ fontFamily: 'DelaGothicOne', lineHeight: 46 }}>
+            className="mb-10 w-full text-center font-bold text-white"
+            style={{
+              fontWeight: '500',
+              fontSize: 34,
+              textAlign: 'center',
+              verticalAlign: 'middle',
+              color: '#FFFFFF',
+            }}>
             Let&apos;s find your personality
           </ThemedText>
           <View className="mb-8">
             <CallExperience />
           </View>
           <View className="mb-4 w-full">
-            <View className="h-32">
-              <WaveVisualizer height={120} waveColor="rgba(100, 100, 255, 0.7)" pointCount={16} />
+            <View className="relative flex h-32 items-center justify-center">
+              <View className="absolute h-[80px] w-full max-w-[354px] overflow-hidden rounded-[24px] bg-black/10 backdrop-blur-[22px]">
+                <View className="absolute flex h-full w-full items-center justify-center">
+                  <WaveVisualizer height={40} waveColor="#FFFFFF" pointCount={16} />
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -238,9 +281,10 @@ export default function DemoScreen() {
       `}
       onPress={handleDisconnect}>
       <ThemedText
-        className="text-center text-2xl font-bold text-white"
+        className="text-center font-bold text-white"
         lightColor="#FFFFFF"
-        darkColor="#FFFFFF">
+        darkColor="#FFFFFF"
+        style={{ fontSize: 26 }}>
         ✕
       </ThemedText>
     </TouchableOpacity>
@@ -248,36 +292,42 @@ export default function DemoScreen() {
 
   return (
     <ThemedView className="flex-1">
-      <LinearGradient
-        colors={['#E7DFE2', '#E7DFE2', '#FD4C18']}
-        className="absolute inset-0"
-        locations={[0, 0.6, 1]}
-      />
-
-      {error && (
-        <View className="z-1 mx-5 rounded-lg bg-error px-4 py-4">
-          <ThemedText className="text-center text-white">{error}</ThemedText>
-        </View>
-      )}
-
-      {connectionDetails ? (
-        <LiveKitRoom
-          token={connectionDetails.token}
-          serverUrl={connectionDetails.serverUrl}
-          connect
-          audio
-          video={false}
-          onDisconnected={handleDisconnect}
-          onError={handleRoomError}
-          onConnected={() => console.log('Connected to demo room:', uniqueRoomName)}>
-          <RoomContent />
-          <RoomAudioRenderer />
-          <ExitButton />
-        </LiveKitRoom>
+      {showPostExperience ? (
+        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+          <PostExperienceScreen />
+        </Animated.View>
       ) : (
-        <View className="flex-1 items-center justify-center">
-          <ThemedText>{isConnecting ? 'Connecting to demo...' : 'Initializing...'}</ThemedText>
-        </View>
+        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+          <View className="absolute inset-0 bg-[#6556F8]" />
+
+          {error && (
+            <View className="z-1 mx-5 rounded-lg bg-error px-4 py-4">
+              <ThemedText className="text-center text-white">{error}</ThemedText>
+            </View>
+          )}
+
+          {connectionDetails ? (
+            <LiveKitRoom
+              token={connectionDetails.token}
+              serverUrl={connectionDetails.serverUrl}
+              connect
+              audio
+              video={false}
+              onDisconnected={handleAIEndedCall}
+              onError={handleRoomError}
+              onConnected={() => console.log('Connected to demo room:', uniqueRoomName)}>
+              <RoomContent />
+              <RoomAudioRenderer />
+              <ExitButton />
+            </LiveKitRoom>
+          ) : (
+            <View className="flex-1 items-center justify-center">
+              <ThemedText className="text-white">
+                {isConnecting ? 'Connecting to demo...' : 'Initializing...'}
+              </ThemedText>
+            </View>
+          )}
+        </Animated.View>
       )}
     </ThemedView>
   );

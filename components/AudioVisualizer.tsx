@@ -159,7 +159,7 @@ export const AudioVisualizer = ({
             ))}
         </View>
       </View>
-      <Text className="text-center text-base font-medium text-black">{displayName}</Text>
+      <Text className="text-center text-base font-medium text-white">{displayName}</Text>
     </View>
   );
 };

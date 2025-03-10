@@ -8,7 +8,16 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
+import {
+  addDetailPoints,
+  createExtremeKeypoints,
+  createRandomGenerator,
+  generateGlowAreaPath,
+  generatePath,
+  generatePrimaryPoints,
+  interpolateWithKeypoints,
+} from 'utils/waveUtils';
 
 interface WaveVisualizerProps {
   height?: number;
@@ -43,38 +52,25 @@ export const WaveVisualizer = ({
     speakingEndTime: 0,
     shapeCounter: 0,
     lastShapeTime: 0,
-    convergenceFactor: 1.0, // Starts at 1.0 (full variation) and decreases over time
-    targetShape: Array(pointCount).fill(height / 2), // The shape we're converging toward
-    isFirstShape: true, // Track if this is the first shape after initialization
-    hasGeneratedInitialShape: false, // Track if we've generated the initial shape
-    hasSpokenAtLeastOnce: false, // Track if the user has spoken at least once
-    finalShapeSeed: Math.floor(Math.random() * 1000000), // Seed for the final shape
+    convergenceFactor: 1.0,
+    targetShape: Array(pointCount).fill(height / 2),
+    isFirstShape: true,
+    hasGeneratedInitialShape: false,
+    hasSpokenAtLeastOnce: false,
+    finalShapeSeed: Math.floor(Math.random() * 1000000),
+    waveParameters: null as {
+      keyPoints: Array<{ x: number; y: number }>;
+      initialHeight: number;
+      extremeKeyPoints: Array<Array<{ x: number; y: number }>>;
+    } | null,
   });
-
-  // Generate a smooth path from control points
-  const generatePath = (points: { y: number }[]) => {
-    if (points.length < 2) return '';
-
-    const segmentWidth = screenWidth / (points.length - 1);
-    let path = `M 0,${points[0].y}`;
-
-    // Use cubic bezier curves for extra smoothness
-    for (let i = 0; i < points.length - 1; i++) {
-      const x1 = i * segmentWidth;
-      const x2 = (i + 1) * segmentWidth;
-
-      // Control points for the cubic bezier
-      const cp1x = x1 + segmentWidth / 3;
-      const cp2x = x2 - segmentWidth / 3;
-
-      path += ` C ${cp1x},${points[i].y} ${cp2x},${points[i + 1].y} ${x2},${points[i + 1].y}`;
-    }
-
-    return path;
-  };
 
   const [pathData, setPathData] = useState(() => {
     return generatePath(Array(pointCount).fill({ y: height / 2 }));
+  });
+
+  const [glowAreaPathData, setGlowAreaPathData] = useState(() => {
+    return generateGlowAreaPath(Array(pointCount).fill({ y: height / 2 }), height);
   });
 
   useEffect(() => {
@@ -83,6 +79,7 @@ export const WaveVisualizer = ({
         y: point.y.value,
       }));
       setPathData(generatePath(currentPoints));
+      setGlowAreaPathData(generateGlowAreaPath(currentPoints, height));
     };
 
     const pathUpdateInterval = setInterval(updatePath, 16); // ~60fps
@@ -96,70 +93,81 @@ export const WaveVisualizer = ({
   const generateFinalTargetShape = () => {
     console.log('Generating final target shape with seed:', voiceData.current.finalShapeSeed);
 
-    let seed = voiceData.current.finalShapeSeed;
-    const random = () => {
-      seed = (seed * 9301 + 49297) % 233280;
-      return seed / 233280;
+    const random = createRandomGenerator(voiceData.current.finalShapeSeed);
+
+    // Generate primary points that define overall wave trend
+    const primaryPoints = generatePrimaryPoints(pointCount, height, random);
+
+    // Add detail points for more natural look
+    const keyPoints = addDetailPoints(primaryPoints, height, random);
+
+    // Store the initial key points
+    voiceData.current.waveParameters = {
+      keyPoints: keyPoints.map((point) => ({ ...point })),
+      initialHeight: height,
+      extremeKeyPoints: [],
     };
 
-    // Generate a complex, interesting target shape
+    // Calculate the actual curve points
     for (let i = 0; i < pointCount; i++) {
-      const position = i / (pointCount - 1);
-      const basePhase = random() * Math.PI;
-      let targetY = Math.sin(position * Math.PI * 2 + basePhase) * height * 0.35;
-      targetY += Math.sin(position * Math.PI * 3.7 + basePhase * 1.5) * height * 0.2;
-      targetY += Math.sin(position * Math.PI * 5.3 + basePhase * 0.7) * height * 0.1;
-
-      targetY += (random() * 2 - 1) * height * 0.15;
-
-      const edgeFactor = Math.min(i, pointCount - 1 - i) / (pointCount / 3);
-      const centeringForce = 1 - Math.min(1, edgeFactor);
-      targetY *= 1 - centeringForce * 0.6;
-
-      // Ensure the point is at least a minimum distance from center
-      const minDistanceFromCenter = height * 0.12;
-      if (Math.abs(targetY) < minDistanceFromCenter) {
-        targetY = (targetY >= 0 ? 1 : -1) * minDistanceFromCenter;
-      }
-
-      voiceData.current.targetShape[i] = height / 2 + targetY;
+      const x = i / (pointCount - 1);
+      const y = interpolateWithKeypoints(x, keyPoints);
+      voiceData.current.targetShape[i] = height / 2 + y;
     }
   };
 
   // Set new target positions and animate to them
-  const animateToNewWave = (baseAmplitude = 0.3, variationAmount = 0.15, seed = Date.now()) => {
+  const animateToNewWave = (seed = Date.now()) => {
     voiceData.current.shapeCounter++;
     voiceData.current.lastShapeTime = Date.now();
 
-    // Seeded random function
-    const random = () => {
-      seed = (seed * 9301 + 49297) % 233280;
-      return seed / 233280;
-    };
+    // If this is a completely new session, reset the seed
+    if (voiceData.current.shapeCounter === 1) {
+      voiceData.current.finalShapeSeed = Math.floor(Math.random() * 1000000);
+    }
+
+    const random = createRandomGenerator(seed);
 
     if (voiceData.current.isFirstShape) {
-      // Generate the final target shape
       generateFinalTargetShape();
       voiceData.current.isFirstShape = false;
       voiceData.current.convergenceFactor = 1.0;
     } else {
-      // First speaking event: convergence = 1.0 (initial shape)
-      // Second speaking event: convergence = 0.8 (20% refinement)
-      // Third speaking event: convergence = 0.6 (40% refinement)
-      // Fourth speaking event: convergence = 0.4 (60% refinement)
-
+      // Get more extreme with each refinement
       if (voiceData.current.shapeCounter === 2) {
-        voiceData.current.convergenceFactor = 0.8;
-      } else if (voiceData.current.shapeCounter === 3) {
-        voiceData.current.convergenceFactor = 0.6;
-      } else if (voiceData.current.shapeCounter === 4) {
-        voiceData.current.convergenceFactor = 0.4;
-      } else {
-        voiceData.current.convergenceFactor = 0.2;
+        voiceData.current.convergenceFactor = 0.5;
+
+        // Generate intermediate extreme version
+        if (
+          voiceData.current.waveParameters &&
+          !voiceData.current.waveParameters.extremeKeyPoints[0]
+        ) {
+          const extremePoints = createExtremeKeypoints(
+            voiceData.current.waveParameters.keyPoints,
+            0.5,
+            height
+          );
+          voiceData.current.waveParameters.extremeKeyPoints[0] = extremePoints;
+        }
+      } else if (voiceData.current.shapeCounter >= 3) {
+        voiceData.current.convergenceFactor = 0.0;
+
+        // Generate final extreme version
+        if (
+          voiceData.current.waveParameters &&
+          !voiceData.current.waveParameters.extremeKeyPoints[1]
+        ) {
+          const extremePoints = createExtremeKeypoints(
+            voiceData.current.waveParameters.keyPoints,
+            1.0,
+            height
+          );
+          voiceData.current.waveParameters.extremeKeyPoints[1] = extremePoints;
+        }
       }
 
       console.log(
-        `Subtle refinement: now at ${(100 - voiceData.current.convergenceFactor * 100).toFixed(0)}% refinement`
+        `Refinement: now at ${(100 - voiceData.current.convergenceFactor * 100).toFixed(0)}% refinement (more extreme)`
       );
     }
 
@@ -169,60 +177,83 @@ export const WaveVisualizer = ({
       cancelAnimation(point.y);
 
       const position = i / (pointCount - 1);
+      let targetOffset;
 
-      // Use the shape counter to create different patterns
-      // For subsequent shapes, use a phase shift that's closer to the original
-      // to maintain similarity with the first shape
-      const initialPhaseShift = 0.7;
-      const phaseVariation = voiceData.current.convergenceFactor * 0.5;
-      const phaseShift =
-        initialPhaseShift + phaseVariation * Math.sin(voiceData.current.shapeCounter);
+      if (voiceData.current.isFirstShape || !voiceData.current.waveParameters) {
+        // For the first shape, generate a random interesting wave
+        const initialKeyPointCount = 8 + Math.floor(random() * 5);
+        const initialKeyPoints: Array<{ x: number; y: number }> = [];
 
-      // Base wave using sine function with phase shift
-      const minAmplitude = 0.2;
-      const effectiveAmplitude = Math.max(minAmplitude, baseAmplitude);
+        // Generate random key points with varied distribution
+        for (let i = 0; i < initialKeyPointCount; i++) {
+          const xBase = i / (initialKeyPointCount - 1);
+          let x = xBase;
 
-      let targetOffset =
-        Math.sin(position * Math.PI * 2 + phaseShift) * height * effectiveAmplitude * 0.7;
-      targetOffset +=
-        Math.sin(position * Math.PI * 3.7 + phaseShift * 1.5) * height * effectiveAmplitude * 0.3;
+          if (i > 0 && i < initialKeyPointCount - 1) {
+            const maxJitter = 0.5 / initialKeyPointCount;
+            x = xBase + (random() * 2 - 1) * maxJitter;
+          }
 
-      const minVariation = 0.08;
-      const effectiveVariation = Math.max(
-        minVariation,
-        variationAmount * voiceData.current.convergenceFactor
-      );
-      targetOffset += (random() * 2 - 1) * height * effectiveVariation;
+          let y;
+          if (i === 0) {
+            y = (random() * 0.9 - 0.45) * height;
+          } else {
+            const prevY = initialKeyPoints[i - 1].y;
+            const shiftProbability = 0.4;
 
-      // Keep endpoints closer to center
-      const edgeFactor = Math.min(i, pointCount - 1 - i) / (pointCount / 3);
-      const centeringForce = 1 - Math.min(1, edgeFactor);
-      targetOffset *= 1 - centeringForce * 0.7;
+            if (random() < shiftProbability) {
+              const direction = random() < 0.5 ? -1 : 1;
+              const shiftMagnitude = (0.15 + random() * 0.3) * height;
+              y = prevY + direction * shiftMagnitude;
+            } else {
+              const maxChange = 0.2 * height * (1 - Math.pow(Math.abs(xBase - 0.5) * 2, 2));
+              y = prevY + (random() * 2 - 1) * maxChange;
+            }
+          }
 
-      // Calculate new target - blend between random shape and target shape based on convergence
-      const randomTarget = height / 2 + targetOffset;
-      let finalTarget;
+          const boundedY = Math.max(Math.min(y, height * 0.48), -height * 0.48);
+          initialKeyPoints.push({ x, y: boundedY });
+        }
 
-      if (voiceData.current.shapeCounter === 1) {
-        finalTarget = randomTarget;
+        initialKeyPoints.sort((a, b) => a.x - b.x);
+        targetOffset = interpolateWithKeypoints(position, initialKeyPoints);
+
+        // Add small noise for texture
+        targetOffset += (random() * 2 - 1) * height * 0.02;
       } else {
-        const refinementFactor = Math.pow(1 - voiceData.current.convergenceFactor, 0.8) * 0.5;
-        finalTarget =
-          randomTarget * (1 - refinementFactor) +
-          voiceData.current.targetShape[i] * refinementFactor;
-      }
-      const distanceFromCenter = Math.abs(finalTarget - height / 2);
-      const minDistanceFromCenter = height * 0.1;
+        // Calculate based on how extreme we want to be
+        const { keyPoints, extremeKeyPoints } = voiceData.current.waveParameters;
+        let finalY;
 
-      if (distanceFromCenter < minDistanceFromCenter) {
-        const direction = finalTarget >= height / 2 ? 1 : -1;
-        finalTarget = height / 2 + direction * minDistanceFromCenter;
+        if (voiceData.current.shapeCounter === 2) {
+          // Blend between initial and intermediate extreme
+          const initialY = interpolateWithKeypoints(position, keyPoints);
+          const intermediateY = interpolateWithKeypoints(position, extremeKeyPoints[0]);
+          const progress = 1 - voiceData.current.convergenceFactor;
+          finalY = initialY * (1 - progress) + intermediateY * progress;
+        } else if (voiceData.current.shapeCounter >= 3) {
+          // Blend between intermediate and final extreme
+          const intermediateY = interpolateWithKeypoints(position, extremeKeyPoints[0]);
+          const finalExtremeY = interpolateWithKeypoints(position, extremeKeyPoints[1]);
+          const progress = 1 - voiceData.current.convergenceFactor;
+          finalY = intermediateY * (1 - progress) + finalExtremeY * progress;
+        } else {
+          finalY = interpolateWithKeypoints(position, keyPoints);
+        }
+
+        targetOffset = finalY;
+
+        // Add decreasing noise as we get more extreme
+        const noiseAmount = 0.03 * voiceData.current.convergenceFactor;
+        targetOffset += (random() * 2 - 1) * height * noiseAmount;
       }
 
-      // Faster animations for early shapes, slower for refinements
-      const duration = 600 + random() * 300 + (1 - voiceData.current.convergenceFactor) * 400;
+      // Calculate final target position
+      const finalTarget = height / 2 + targetOffset;
+
+      // Animate to the target
       point.y.value = withTiming(finalTarget, {
-        duration: duration,
+        duration: 700 + random() * 200,
         easing: Easing.bezier(0.25, 0.1, 0.25, 1),
       });
     });
@@ -251,7 +282,7 @@ export const WaveVisualizer = ({
     // If we don't have enough data, use default values
     if (voiceData.current.volumeHistory.length < 2) {
       console.log('Not enough voice data, using default shape');
-      animateToNewWave(0.3, 0.15, Date.now() + voiceData.current.shapeCounter * 1000);
+      animateToNewWave(Date.now() + voiceData.current.shapeCounter * 1000);
       return;
     }
 
@@ -265,23 +296,11 @@ export const WaveVisualizer = ({
 
     console.log(`Voice data: avg=${avgVolume.toFixed(2)}, variance=${volumeVariance.toFixed(2)}`);
 
-    // Use voice characteristics with minimum values to ensure visible waves
-    const baseAmplitude =
-      Math.max(0.25, Math.min(0.5, avgVolume * 0.6)) *
-      (0.8 + Math.random() * 0.2) *
-      (0.6 + voiceData.current.convergenceFactor * 0.4);
-
-    const variationAmount =
-      Math.max(0.15, Math.min(0.3, volumeVariance * 0.4)) *
-      (0.8 + Math.random() * 0.2) *
-      (0.5 + voiceData.current.convergenceFactor * 0.5);
+    // Create a unique seed for this shape
+    const uniqueSeed = Date.now() + Math.floor(Math.random() * 10000);
 
     // Animate to new wave shape
-    animateToNewWave(
-      baseAmplitude,
-      variationAmount,
-      Date.now() + voiceData.current.shapeCounter * 1000
-    );
+    animateToNewWave(uniqueSeed);
     voiceData.current.volumeHistory = [];
 
     console.log('Generated new wave shape');
@@ -370,7 +389,7 @@ export const WaveVisualizer = ({
       // and they're not currently speaking
       if (voiceData.current.hasSpokenAtLeastOnce && timeSinceLastShape > 15000 && !isSpeaking) {
         console.log('Refreshing wave shape due to inactivity');
-        animateToNewWave(0.1, 0.05, now);
+        animateToNewWave(Date.now());
       }
     }, 5000);
 
@@ -389,9 +408,22 @@ export const WaveVisualizer = ({
   });
 
   return (
-    <View style={{ height, width: '100%' }}>
+    <View style={{ height, width: '100%', overflow: 'hidden' }}>
       <Animated.View style={[{ width: '100%', height: '100%' }, pathStyle]}>
         <Svg width="100%" height="100%">
+          <Defs>
+            <LinearGradient id="glowGradient" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={waveColor} stopOpacity="0.3" />
+              <Stop offset="0.3" stopColor={waveColor} stopOpacity="0.15" />
+              <Stop offset="0.7" stopColor={waveColor} stopOpacity="0.05" />
+              <Stop offset="1" stopColor={waveColor} stopOpacity="0" />
+            </LinearGradient>
+          </Defs>
+
+          {/* Glow area below the line */}
+          <Path d={glowAreaPathData} fill="url(#glowGradient)" strokeWidth={0} />
+
+          {/* Main line */}
           <Path
             d={pathData}
             stroke={waveColor}

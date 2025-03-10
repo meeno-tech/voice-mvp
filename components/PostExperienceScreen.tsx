@@ -122,7 +122,7 @@ export const PostExperienceScreen = () => {
   }));
 
   const openInstagram = () => {
-    Linking.openURL('https://www.instagram.com/be_vokal/');
+    Linking.openURL('https://www.instagram.com/meeno.social/');
   };
 
   return (

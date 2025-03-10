@@ -85,9 +85,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     // Load brand image
-    const { data: brandData } = supabase.storage
-      .from('app_assets')
-      .getPublicUrl('vokal-brand.webp');
+    const { data: brandData } = supabase.storage.from('app_assets').getPublicUrl('meeno_large.png');
     setBrandImageUrl(brandData.publicUrl);
 
     // Get video URL directly (simplified approach)
@@ -117,7 +115,7 @@ export default function HomeScreen() {
 
   const openInstagram = () => {
     mixpanel.track('Instagram Share Button Pressed');
-    Linking.openURL('https://www.instagram.com/be_vokal/');
+    Linking.openURL('https://www.instagram.com/meeno.social/');
   };
 
   return (
@@ -147,6 +145,7 @@ export default function HomeScreen() {
               source={{ uri: brandImageUrl }}
               className="h-[50px] w-[200px]"
               resizeMode="contain"
+              style={{ tintColor: 'black' }}
             />
           </View>
 

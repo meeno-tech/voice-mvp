@@ -112,8 +112,8 @@ export function AuthModal({ visible, onClose }: AuthModalProps) {
                     {otpSent
                       ? 'Enter Verification Code'
                       : isSignUp
-                        ? `Create your free Vokal${isSignUp ? ' account' : ''}`
-                        : 'Sign in to Vokal'}
+                        ? `Create your free Meeno${isSignUp ? ' account' : ''}`
+                        : 'Sign in to Meeno'}
                   </ThemedText>
                 </View>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>

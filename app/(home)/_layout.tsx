@@ -7,7 +7,7 @@ function HomeLayout() {
       <Stack.Screen
         name="[room]"
         options={{
-          title: 'Vokal Scene',
+          title: 'Meeno Scene',
           headerShown: false,
         }}
       />

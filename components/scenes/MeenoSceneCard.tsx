@@ -4,19 +4,19 @@ import { ImageBackground, Text, TouchableOpacity, View } from 'react-native';
 import { Scene } from 'types/scenes';
 import { supabase } from 'utils/supabase';
 
-interface VokalSceneCardProps {
+interface MeenoSceneCardProps {
   scene: Scene;
   onPress: () => void;
   cardWidth: number;
   cardHeight: number;
 }
 
-export default function VokalSceneCard({
+export default function MeenoSceneCard({
   scene,
   onPress,
   cardWidth,
   cardHeight,
-}: VokalSceneCardProps) {
+}: MeenoSceneCardProps) {
   let imageUrl = scene.imageUrl;
   if (imageUrl) {
     const { data } = supabase.storage.from('scene_images').getPublicUrl(imageUrl);

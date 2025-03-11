@@ -251,14 +251,12 @@ export default function HomeScreen() {
                 {/* Feature 1 */}
                 <View className="flex-row items-center gap-4">
                   <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
-                    <Ionicons name="mic-outline" size={20} color="#07A669" />
+                    <Ionicons name="clipboard-outline" size={20} color="#07A669" />
                   </View>
                   <View className="flex-1 flex-col gap-0.5">
-                    <Text className="text-[16px] font-semibold text-black">
-                      Voice Analysis & Insights
-                    </Text>
+                    <Text className="text-[16px] font-semibold text-black">Personality test</Text>
                     <Text className="text-[15px] text-gray-500">
-                      Discover more about yourself with a quick chat with AI
+                      Learn what first impression you make with a 2 minute voice test
                     </Text>
                   </View>
                 </View>
@@ -266,40 +264,30 @@ export default function HomeScreen() {
                 {/* Feature 2 */}
                 <View className="flex-row items-center gap-4">
                   <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
-                    <Ionicons name="heart-outline" size={20} color="#07A669" />
+                    <Ionicons name="chatbubbles-outline" size={20} color="#07A669" />
                   </View>
                   <View className="flex-1 flex-col gap-0.5">
                     <Text className="text-[16px] font-semibold text-black">
-                      Ditch the dating apps
+                      Duolingo for dating
                     </Text>
                     <Text className="text-[15px] text-gray-500">
-                      Enjoy real, lifelike conversations
+                      Practice lifelike conversations with girls, using voice-based AI
                     </Text>
-                    <View className="mt-2">
-                      <View className="self-start rounded-full bg-gray-100 px-2 py-0.5">
-                        <Text className="text-xs font-medium text-gray-500">Coming soon</Text>
-                      </View>
-                    </View>
                   </View>
                 </View>
 
                 {/* Feature 3 */}
                 <View className="flex-row items-center gap-4">
                   <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
-                    <Ionicons name="fitness-outline" size={20} color="#07A669" />
+                    <Ionicons name="flame-outline" size={20} color="#07A669" />
                   </View>
                   <View className="flex-1 flex-col gap-0.5">
                     <Text className="text-[16px] font-semibold text-black">
                       Real-world challenges
                     </Text>
                     <Text className="text-[15px] text-gray-500">
-                      Grasp the skill of being yourself in any situation
+                      Master the art of flirting with confidence in any situation
                     </Text>
-                    <View className="mt-2">
-                      <View className="self-start rounded-full bg-gray-100 px-2 py-0.5">
-                        <Text className="text-xs font-medium text-gray-500">Coming soon</Text>
-                      </View>
-                    </View>
                   </View>
                 </View>
               </View>

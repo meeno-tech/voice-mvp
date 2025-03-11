@@ -8,10 +8,11 @@ import { Audio } from 'expo-av';
 import { useRouter } from 'expo-router';
 import { Room } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Platform, TouchableOpacity, View } from 'react-native';
+import { Animated, Image, Platform, TouchableOpacity, View } from 'react-native';
 import { Scene, mockScenes } from 'types/scenes';
 import { mixpanel } from 'utils/mixpanel';
 import { generateUniqueRoomName, getBaseRoomName } from 'utils/roomUtils';
+import { supabase } from 'utils/supabase';
 
 export default function DemoScreen() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function DemoScreen() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPostExperience, setShowPostExperience] = useState(false);
+  const [brandImageUrl, setBrandImageUrl] = useState<string>('');
 
   const cleanupRoom = useCallback(async () => {
     if (cleanupInProgressRef.current || !roomRef.current) return;
@@ -102,6 +104,12 @@ export default function DemoScreen() {
 
     // Automatically initialize the demo when the component mounts
     initializeDemo();
+  }, []);
+
+  useEffect(() => {
+    // Load brand image
+    const { data: brandData } = supabase.storage.from('app_assets').getPublicUrl('meeno_large.png');
+    setBrandImageUrl(brandData.publicUrl);
   }, []);
 
   const connectToScene = async (scene: Scene, uniqueRoomId: string) => {
@@ -242,18 +250,38 @@ export default function DemoScreen() {
     return (
       <View className="z-1 flex-1 items-center justify-center">
         <View className="w-full items-center px-4 py-8 pt-16">
+          {/* Logo */}
+          <View className="items-center">
+            <Image
+              source={{ uri: brandImageUrl }}
+              className="h-[50px] w-[200px]"
+              resizeMode="contain"
+              style={{ tintColor: 'white' }}
+            />
+          </View>
+
+          {/* Heading */}
           <ThemedText
-            type="title"
-            className="mb-10 w-full text-center font-bold text-white"
+            className="mb-2 w-full pt-2 text-center font-semibold text-white"
             style={{
-              fontWeight: '500',
-              fontSize: 34,
-              textAlign: 'center',
-              verticalAlign: 'middle',
+              fontSize: 20,
+              letterSpacing: 0.3,
               color: '#FFFFFF',
             }}>
             Let&apos;s find your personality
           </ThemedText>
+
+          {/* Subtitle
+          <ThemedText
+            className="max-w-[340px] text-center text-[16px] font-light text-white md:text-[17px]"
+            style={{
+              marginTop: responsivePadding.textMargin * 0.5,
+              marginBottom: responsivePadding.textMargin * 1.5,
+              color: '#FFFFFF',
+            }}>
+            To start your journey, it&apos;s best to use headphones or find a quiet spot.
+          </ThemedText> */}
+
           <View className="mb-8">
             <CallExperience />
           </View>
@@ -298,7 +326,7 @@ export default function DemoScreen() {
         </Animated.View>
       ) : (
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-          <View className="absolute inset-0 bg-[#6556F8]" />
+          <View className="absolute inset-0 bg-[#0a9961]" />
 
           {error && (
             <View className="z-1 mx-5 rounded-lg bg-error px-4 py-4">

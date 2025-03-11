@@ -126,7 +126,7 @@ export const PostExperienceScreen = () => {
   };
 
   return (
-    <View className="relative flex-1 bg-[#6556F8]">
+    <View className="relative flex-1 bg-[#07A669]">
       {/* Stars background */}
       {stars.map((star) => (
         <Star

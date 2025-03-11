@@ -3,7 +3,16 @@ import { ResizeMode, Video } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Image, Linking, Platform, Text, TouchableOpacity, View, ScrollView } from 'react-native';
+import {
+  Image,
+  Linking,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { mixpanel } from 'utils/mixpanel';
 import { supabase } from 'utils/supabase';
@@ -82,6 +91,50 @@ export default function HomeScreen() {
   const [videoUrl, setVideoUrl] = useState('');
   const [videoError, setVideoError] = useState(false);
   const [videoLoading, setVideoLoading] = useState(true);
+  const { height } = useWindowDimensions();
+
+  // Calculate responsive padding values based on screen height
+  const getResponsivePadding = () => {
+    // For very small screens (under 600px)
+    if (height < 600) {
+      return {
+        topPadding: Math.max(8, height * 0.02), // Minimum 8px, or 2% of height
+        logoMargin: Math.max(8, height * 0.015), // Minimum 8px, or 1.5% of height
+        textMargin: Math.max(6, height * 0.01), // Minimum 6px, or 1% of height
+        buttonMargin: Math.max(6, height * 0.01), // Minimum 6px, or 1% of height
+      };
+    }
+
+    // For medium screens (600px - 900px)
+    if (height < 900) {
+      return {
+        topPadding: Math.max(16, height * 0.04), // Minimum 16px, or 4% of height
+        logoMargin: Math.max(16, height * 0.025), // Minimum 16px, or 2.5% of height
+        textMargin: Math.max(12, height * 0.015), // Minimum 12px, or 1.5% of height
+        buttonMargin: Math.max(12, height * 0.015), // Minimum 12px, or 1.5% of height
+      };
+    }
+
+    // For large screens (900px - 1200px)
+    if (height < 1200) {
+      return {
+        topPadding: Math.max(40, height * 0.06), // Minimum 40px, or 6% of height
+        logoMargin: Math.max(72, height * 0.08), // Minimum 72px, or 8% of height
+        textMargin: Math.max(28, height * 0.03), // Minimum 28px, or 3% of height
+        buttonMargin: Math.max(28, height * 0.03), // Minimum 28px, or 3% of height
+      };
+    }
+
+    // For very large screens (1200px+)
+    return {
+      topPadding: Math.max(64, height * 0.08), // Minimum 64px, or 8% of height
+      logoMargin: Math.max(96, height * 0.09), // Minimum 96px, or 9% of height
+      textMargin: Math.max(36, height * 0.035), // Minimum 36px, or 3.5% of height
+      buttonMargin: Math.max(36, height * 0.035), // Minimum 36px, or 3.5% of height
+    };
+  };
+
+  const responsivePadding = getResponsivePadding();
 
   useEffect(() => {
     // Load brand image
@@ -131,40 +184,64 @@ export default function HomeScreen() {
         ))}
 
       <LinearGradient
-        colors={['rgba(101, 86, 248, 0.3)', 'rgba(255, 255, 255, 0)']}
+        colors={['rgba(7, 166, 105, 0.6)', 'rgba(255, 255, 255, 0)']}
         style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 0 }}
       />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: Platform.OS === 'ios' ? 0 : 0,
+        }}
         showsVerticalScrollIndicator={false}>
         <View
-          className="pt-safe flex-1 flex-col justify-between px-4 pb-8 md:items-center md:justify-center"
-          style={{ zIndex: 1 }}>
-          <View className="w-full items-center pt-8 md:max-w-[1200px]">
+          className="pt-safe flex-1 flex-col px-4 md:items-center"
+          style={{
+            zIndex: 1,
+            justifyContent: height > 900 ? 'flex-start' : 'space-between', // Use space-between only for smaller screens
+            paddingBottom: height > 900 ? Math.max(40, height * 0.05) : 16, // More padding at bottom for larger screens
+          }}>
+          <View
+            className="w-full items-center md:max-w-[1200px]"
+            style={{ paddingTop: responsivePadding.topPadding }}>
             {/* Logo */}
-            <View className="mt-16 items-center">
+            <View className="items-center" style={{ marginTop: responsivePadding.logoMargin }}>
               <Image
                 source={{ uri: brandImageUrl }}
                 className="h-[50px] w-[200px]"
                 resizeMode="contain"
-                style={{ tintColor: 'black' }}
+                style={{ tintColor: 'white' }}
               />
             </View>
 
-            <Text className="mb-8 mt-6 max-w-[340px] text-center text-[17px] font-light text-gray-700">
+            <Text
+              className="max-w-[340px] text-center text-[16px] font-light text-gray-700 md:text-[17px]"
+              style={{
+                marginTop: responsivePadding.textMargin,
+                marginBottom:
+                  height > 900 ? responsivePadding.textMargin * 1.5 : responsivePadding.textMargin,
+              }}>
               To start your journey, it&apos;s best to use headphones or find a quiet spot.
             </Text>
           </View>
 
-          <View className="w-full items-center md:max-w-[1200px]">
+          <View
+            className="w-full items-center md:max-w-[1200px]"
+            style={{
+              marginTop: height > 900 ? responsivePadding.textMargin * 1.5 : 0,
+            }}>
             <View className="w-full max-w-[340px] rounded-[28px] bg-white p-4 shadow-sm">
-              <View className="flex flex-col gap-8">
+              <View
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: height < 600 ? 16 : height < 900 ? 24 : height < 1200 ? 32 : 40,
+                }}>
                 {/* Feature 1 */}
                 <View className="flex-row items-center gap-4">
                   <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
-                    <Ionicons name="mic-outline" size={20} color="#6556F8" />
+                    <Ionicons name="mic-outline" size={20} color="#07A669" />
                   </View>
                   <View className="flex-1 flex-col gap-0.5">
                     <Text className="text-[16px] font-semibold text-black">
@@ -179,7 +256,7 @@ export default function HomeScreen() {
                 {/* Feature 2 */}
                 <View className="flex-row items-center gap-4">
                   <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
-                    <Ionicons name="heart-outline" size={20} color="#6556F8" />
+                    <Ionicons name="heart-outline" size={20} color="#07A669" />
                   </View>
                   <View className="flex-1 flex-col gap-0.5">
                     <Text className="text-[16px] font-semibold text-black">
@@ -199,7 +276,7 @@ export default function HomeScreen() {
                 {/* Feature 3 */}
                 <View className="flex-row items-center gap-4">
                   <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
-                    <Ionicons name="fitness-outline" size={20} color="#6556F8" />
+                    <Ionicons name="fitness-outline" size={20} color="#07A669" />
                   </View>
                   <View className="flex-1 flex-col gap-0.5">
                     <Text className="text-[16px] font-semibold text-black">
@@ -219,10 +296,12 @@ export default function HomeScreen() {
             </View>
 
             {/* Buttons */}
-            <View className="mt-6 w-full max-w-[340px] flex-col gap-3">
+            <View
+              className="w-full max-w-[340px] flex-col gap-2 md:gap-3"
+              style={{ marginTop: responsivePadding.buttonMargin }}>
               {/* Try Demo Button */}
               <TouchableOpacity
-                className="h-[48px] w-full items-center justify-center rounded-[48px] bg-[#6556F8]"
+                className="h-[48px] w-full items-center justify-center rounded-[48px] bg-[#07A669]"
                 onPress={handleDemoPress}>
                 <Text className="text-[16px] font-normal text-white">Try Demo</Text>
               </TouchableOpacity>

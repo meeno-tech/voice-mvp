@@ -237,7 +237,7 @@ export default function HomeScreen() {
                   fill="#000"
                 />
               </Svg>
-              <Text className="text-[17px] font-normal text-black">Follow on IG</Text>
+              <Text className="text-[17px] font-normal text-black">Follow Meeno on IG</Text>
             </TouchableOpacity>
 
             {/* Features Card */}

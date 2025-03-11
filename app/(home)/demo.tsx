@@ -327,7 +327,7 @@ export default function DemoScreen() {
             className="text-[17px] font-semibold"
             lightColor="#000000"
             darkColor="#000000">
-            Follow on IG
+            Follow Meeno on IG
           </ThemedText>
         </View>
       </TouchableOpacity>

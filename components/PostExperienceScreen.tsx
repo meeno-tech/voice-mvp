@@ -103,7 +103,7 @@ const CallExperiencePlaceholder = () => {
                   height,
                   width: 6,
                   marginHorizontal: 1.5,
-                  backgroundColor: '#FD4C18',
+                  backgroundColor: '#07A669',
                   opacity: 0.6,
                   borderRadius: 2,
                 }}
@@ -240,7 +240,7 @@ export const PostExperienceScreen = ({ brandImageUrl }: PostExperienceScreenProp
                 fill="#000"
               />
             </Svg>
-            <Text className="text-[17px] font-semibold text-black">Follow on IG</Text>
+            <Text className="text-[17px] font-semibold text-black">Follow Meeno on IG</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

@@ -29,7 +29,7 @@ export default function DemoScreen() {
   } | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPostExperience, setShowPostExperience] = useState(true);
+  const [showPostExperience, setShowPostExperience] = useState(false);
   const [brandImageUrl, setBrandImageUrl] = useState<string>('');
 
   const cleanupRoom = useCallback(async () => {

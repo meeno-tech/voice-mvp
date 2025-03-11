@@ -160,6 +160,21 @@ export default function HomeScreen() {
               {/* Feature 1 */}
               <View className="flex-row items-center gap-4">
                 <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
+                  <Ionicons name="mic-outline" size={20} color="#6556F8" />
+                </View>
+                <View className="flex-1 flex-col gap-0.5">
+                  <Text className="text-[16px] font-semibold text-black">
+                    Voice Analysis & Insights
+                  </Text>
+                  <Text className="text-[15px] text-gray-500">
+                    Discover more about yourself with a quick chat with AI
+                  </Text>
+                </View>
+              </View>
+
+              {/* Feature 2 */}
+              <View className="flex-row items-center gap-4">
+                <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
                   <Ionicons name="heart-outline" size={20} color="#6556F8" />
                 </View>
                 <View className="flex-1 flex-col gap-0.5">
@@ -169,10 +184,15 @@ export default function HomeScreen() {
                   <Text className="text-[15px] text-gray-500">
                     Enjoy real, lifelike conversations
                   </Text>
+                  <View className="mt-2">
+                    <View className="self-start rounded-full bg-gray-100 px-2 py-0.5">
+                      <Text className="text-xs font-medium text-gray-500">Coming soon</Text>
+                    </View>
+                  </View>
                 </View>
               </View>
 
-              {/* Feature 2 */}
+              {/* Feature 3 */}
               <View className="flex-row items-center gap-4">
                 <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
                   <Ionicons name="fitness-outline" size={20} color="#6556F8" />
@@ -184,21 +204,11 @@ export default function HomeScreen() {
                   <Text className="text-[15px] text-gray-500">
                     Grasp the skill of being yourself in any situation
                   </Text>
-                </View>
-              </View>
-
-              {/* Feature 3 */}
-              <View className="flex-row items-center gap-4">
-                <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
-                  <Ionicons name="location-outline" size={20} color="#6556F8" />
-                </View>
-                <View className="flex-1 flex-col gap-0.5">
-                  <Text className="text-[16px] font-semibold text-black">
-                    City-specific conversation hacks
-                  </Text>
-                  <Text className="text-[15px] text-gray-500">
-                    Speak like a true local with our tips and tricks
-                  </Text>
+                  <View className="mt-2">
+                    <View className="self-start rounded-full bg-gray-100 px-2 py-0.5">
+                      <Text className="text-xs font-medium text-gray-500">Coming soon</Text>
+                    </View>
+                  </View>
                 </View>
               </View>
             </View>

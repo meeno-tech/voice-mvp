@@ -32,6 +32,29 @@ export default function DemoScreen() {
   const [showPostExperience, setShowPostExperience] = useState(false);
   const [brandImageUrl, setBrandImageUrl] = useState<string>('');
 
+  const requestPermissions = async () => {
+    if (Platform.OS !== 'web') {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        setError('Microphone permission is required');
+        return false;
+      }
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Clean up the stream after we've verified permissions
+        stream.getTracks().forEach((track) => track.stop());
+        setError(null);
+        return true;
+      } catch (err) {
+        console.error('Permission error:', err);
+        setError('permission_denied');
+        return false;
+      }
+    }
+    return true;
+  };
+
   const cleanupRoom = useCallback(async () => {
     if (cleanupInProgressRef.current || !roomRef.current) return;
     cleanupInProgressRef.current = true;
@@ -56,17 +79,6 @@ export default function DemoScreen() {
   }, [cleanupRoom]);
 
   useEffect(() => {
-    const requestPermissions = async () => {
-      if (Platform.OS !== 'web') {
-        const { status } = await Audio.requestPermissionsAsync();
-        if (status !== 'granted') {
-          setError('Microphone permission is required');
-          return false;
-        }
-      }
-      return true;
-    };
-
     const initializeDemo = async () => {
       const hasPermissions = await requestPermissions();
       if (!hasPermissions) return;
@@ -290,7 +302,7 @@ export default function DemoScreen() {
     );
   };
 
-  const ExitButton = () => {
+  const InstagramButton = () => {
     const openInstagram = () => {
       Linking.openURL('https://www.instagram.com/meeno.social/');
     };
@@ -333,8 +345,42 @@ export default function DemoScreen() {
           <View className="absolute inset-0 bg-[#0a9961]" />
 
           {error && (
-            <View className="z-1 mx-5 rounded-lg bg-error px-4 py-4">
-              <ThemedText className="text-center text-white">{error}</ThemedText>
+            <View className="z-1 flex items-center justify-center">
+              {error === 'permission_denied' ? (
+                <View className="mx-auto my-10 max-w-[300px] rounded-xl bg-white p-4 shadow-md">
+                  <ThemedText
+                    className="mb-2 text-center text-base font-semibold"
+                    lightColor="#333">
+                    Oops! 🙉{'\n'}Enable mic permissions and try again.{'\n'}Talk soon!
+                  </ThemedText>
+
+                  {Platform.OS === 'web' ? (
+                    <View>
+                      <View className="mb-3 rounded-md bg-gray-100 p-2">
+                        <ThemedText className="text-xs" lightColor="#555">
+                          1. Click the lock/info icon in your address bar
+                          {'\n'}2. Find &quot;Microphone&quot; permissions
+                          {'\n'}3. Change the setting to &quot;Allow&quot;
+                        </ThemedText>
+                      </View>
+                    </View>
+                  ) : (
+                    <View className="items-center">
+                      <TouchableOpacity
+                        className="rounded-lg bg-[#0a9961] px-3 py-1.5"
+                        onPress={requestPermissions}>
+                        <ThemedText className="text-xs font-medium text-white">
+                          Try again
+                        </ThemedText>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View className="mx-5 mt-20 w-full max-w-[400px] rounded-lg bg-error px-4 py-4">
+                  <ThemedText className="text-center text-white">{error}</ThemedText>
+                </View>
+              )}
             </View>
           )}
 
@@ -350,7 +396,7 @@ export default function DemoScreen() {
               onConnected={() => console.log('Connected to demo room:', uniqueRoomName)}>
               <RoomContent />
               <RoomAudioRenderer />
-              <ExitButton />
+              <InstagramButton />
             </LiveKitRoom>
           ) : (
             <View className="flex-1 items-center justify-center">

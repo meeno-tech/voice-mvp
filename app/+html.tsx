@@ -31,7 +31,10 @@ export default function Root({ children }: { children: React.ReactNode }) {
         {/* Add any additional <head> elements that you want globally available on web... */}
         <meta property="og:title" content="Meeno" />
         <meta property="og:description" content="Duolingo for dating." />
-        <meta property="og:image" content="https://meeno.com/meeno_image.png" />
+        <meta
+          property="og:image"
+          content="https://nsjhgcruxftdcvgimnms.supabase.co/storage/v1/object/public/app_assets//meeno_large.png"
+        />
         <meta property="og:url" content="https://meeno.com" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Meeno" />

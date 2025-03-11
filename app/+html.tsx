@@ -33,7 +33,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta property="og:description" content="Duolingo for dating." />
         <meta
           property="og:image"
-          content="https://nsjhgcruxftdcvgimnms.supabase.co/storage/v1/object/public/app_assets//meeno_large.png"
+          content="https://nsjhgcruxftdcvgimnms.supabase.co/storage/v1/object/public/app_assets//meeno_w_g.png"
         />
         <meta property="og:url" content="https://meeno.com" />
         <meta property="og:type" content="website" />

@@ -259,7 +259,7 @@ export default function DemoScreen() {
               letterSpacing: 0.3,
               color: '#FFFFFF',
             }}>
-            Let&apos;s find your personality
+            Find out what impression{'\n'}you make
           </ThemedText>
 
           {/* Subtitle

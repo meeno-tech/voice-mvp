@@ -218,7 +218,8 @@ export const PostExperienceScreen = ({ brandImageUrl }: PostExperienceScreenProp
                 fontSize: Math.min(17, width / 24), // Scale font based on screen width
               }}>
               Meeno is &ldquo;duolingo for dating&rdquo;. Practice flirting with voice-based AI.
-              Follow us for early access, and insights of the future of romance.
+              {'\n'}
+              Follow us for early access and insights into the future of romance.
             </Text>
           </View>
         </View>

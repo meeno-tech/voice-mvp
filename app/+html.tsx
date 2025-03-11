@@ -29,12 +29,12 @@ export default function Root({ children }: { children: React.ReactNode }) {
         {/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
         <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
         {/* Add any additional <head> elements that you want globally available on web... */}
-        <meta property="og:title" content="Your Website Title" />
-        <meta property="og:description" content="A brief description of your webpage." />
-        <meta property="og:image" content="https://example.com/image.jpg" />
-        <meta property="og:url" content="https://example.com" />
+        <meta property="og:title" content="Meeno" />
+        <meta property="og:description" content="Duolingo for dating." />
+        <meta property="og:image" content="https://meeno.com/meeno_image.png" />
+        <meta property="og:url" content="https://meeno.com" />
         <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="Your Website Name" />
+        <meta property="og:site_name" content="Meeno" />
         <meta property="og:locale" content="en_US" />
       </head>
       <body>{children}</body>

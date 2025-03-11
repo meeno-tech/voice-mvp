@@ -8,7 +8,8 @@ import { Audio } from 'expo-av';
 import { useRouter } from 'expo-router';
 import { Room } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Image, Platform, TouchableOpacity, View } from 'react-native';
+import { Animated, Image, Linking, Platform, TouchableOpacity, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { Scene, mockScenes } from 'types/scenes';
 import { mixpanel } from 'utils/mixpanel';
 import { generateUniqueRoomName, getBaseRoomName } from 'utils/roomUtils';
@@ -186,27 +187,17 @@ export default function DemoScreen() {
     }
   };
 
-  const handleDisconnect = async () => {
+  // Handle when the AI ends the call
+  const handleAIEndedCall = async () => {
     try {
-      mixpanel.track('Demo Disconnected', {
+      console.log('AI ended call, current scene:', scene?.title);
+
+      mixpanel.track('Demo AI Ended Call', {
         scene_id: scene?.id ?? null,
         scene_name: scene?.title ?? null,
         room_id: uniqueRoomName,
       });
 
-      // If the disconnect was initiated by the user (X button), go to home
-      await cleanupRoom();
-      setConnectionDetails(null);
-      router.replace('/(home)');
-    } catch (error) {
-      console.error('Error during disconnect:', error);
-      router.replace('/(home)');
-    }
-  };
-
-  // Handle when the AI ends the call
-  const handleAIEndedCall = async () => {
-    try {
       // Start fade out animation
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -299,30 +290,43 @@ export default function DemoScreen() {
     );
   };
 
-  const ExitButton = () => (
-    <TouchableOpacity
-      className={`
-        absolute bottom-8 left-1/2 h-16 w-[72px]
-        -translate-x-[35px] items-center justify-center rounded-full 
-        bg-black-12 md:bottom-10
-        ${Platform.OS === 'web' ? 'cursor-pointer' : ''}
-      `}
-      onPress={handleDisconnect}>
-      <ThemedText
-        className="text-center font-bold text-white"
-        lightColor="#FFFFFF"
-        darkColor="#FFFFFF"
-        style={{ fontSize: 26 }}>
-        ✕
-      </ThemedText>
-    </TouchableOpacity>
-  );
+  const ExitButton = () => {
+    const openInstagram = () => {
+      Linking.openURL('https://www.instagram.com/meeno.social/');
+    };
+
+    return (
+      <TouchableOpacity
+        className={`
+          absolute bottom-8 left-1/2 h-16 w-[180px]
+          -translate-x-[90px] items-center justify-center rounded-full 
+          bg-white md:bottom-10
+          ${Platform.OS === 'web' ? 'cursor-pointer' : ''}
+        `}
+        onPress={openInstagram}>
+        <View className="flex-row items-center justify-center">
+          <Svg width="24" height="24" viewBox="0 0 24 24" className="mr-2">
+            <Path
+              d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"
+              fill="#000"
+            />
+          </Svg>
+          <ThemedText
+            className="text-[17px] font-semibold"
+            lightColor="#000000"
+            darkColor="#000000">
+            Follow on IG
+          </ThemedText>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <ThemedView className="flex-1">
       {showPostExperience ? (
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-          <PostExperienceScreen />
+          <PostExperienceScreen brandImageUrl={brandImageUrl} />
         </Animated.View>
       ) : (
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>

@@ -34,10 +34,10 @@ export const CallExperience = () => {
           <AudioVisualizer
             participantIdentity={participant.identity}
             barCount={5}
-            color="#FD4C18"
+            color="#07A669"
             maxHeight={30}
             barWidth={6}
-            label={participant.name || 'AI'}
+            label={'Meeno'}
             sensitivityMultiplier={3}
           />
         </View>

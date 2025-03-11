@@ -271,7 +271,7 @@ export default function DemoScreen() {
               letterSpacing: 0.3,
               color: '#FFFFFF',
             }}>
-            Find out what impression{'\n'}you make
+            Find out what first impression{'\n'}you make
           </ThemedText>
 
           {/* Subtitle

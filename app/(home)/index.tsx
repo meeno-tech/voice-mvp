@@ -297,7 +297,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               className="h-[48px] w-full items-center justify-center rounded-[48px] bg-[#07A669]"
               onPress={handleDemoPress}>
-              <Text className="text-[16px] font-normal text-white">Try Demo</Text>
+              <Text className="text-[16px] font-normal text-white">Start Personality Test</Text>
             </TouchableOpacity>
           </View>
         </View>

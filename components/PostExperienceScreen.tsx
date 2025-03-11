@@ -111,7 +111,7 @@ const CallExperiencePlaceholder = () => {
             ))}
           </View>
         </View>
-        <Text className="text-center text-base font-medium text-white/60">AI</Text>
+        <Text className="text-center text-base font-medium text-white/60">Meeno</Text>
       </View>
     </View>
   );
@@ -192,7 +192,7 @@ export const PostExperienceScreen = ({ brandImageUrl }: PostExperienceScreenProp
               letterSpacing: 0.3,
               color: '#FFFFFF',
             }}>
-            Find out what impression{'\n'}you make
+            Find out what first impression{'\n'}you make
           </ThemedText>
 
           {/* Call experience placeholder */}
@@ -213,12 +213,17 @@ export const PostExperienceScreen = ({ brandImageUrl }: PostExperienceScreenProp
               CALLING ALL GENTLEMEN
             </Text>
             <Text
-              className="text-center leading-[22px] text-white opacity-60"
+              className="text-center leading-[22px] text-white"
               style={{
                 fontSize: Math.min(17, width / 24), // Scale font based on screen width
               }}>
               Meeno is &ldquo;duolingo for dating&rdquo;. Practice flirting with voice-based AI.
-              {'\n'}
+            </Text>
+            <Text
+              className="text-center leading-[22px] text-white opacity-60"
+              style={{
+                fontSize: Math.min(17, width / 24), // Scale font based on screen width
+              }}>
               Follow us for early access and insights into the future of romance.
             </Text>
           </View>

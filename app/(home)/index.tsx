@@ -93,48 +93,44 @@ export default function HomeScreen() {
   const [videoLoading, setVideoLoading] = useState(true);
   const { height } = useWindowDimensions();
 
-  // Calculate responsive padding values based on screen height
-  const getResponsivePadding = () => {
+  // Calculate responsive spacing based on screen height
+  const getResponsiveSpacing = () => {
     // For very small screens (under 600px)
     if (height < 600) {
       return {
-        topPadding: Math.max(8, height * 0.02), // Minimum 8px, or 2% of height
-        logoMargin: Math.max(8, height * 0.015), // Minimum 8px, or 1.5% of height
-        textMargin: Math.max(6, height * 0.01), // Minimum 6px, or 1% of height
-        buttonMargin: Math.max(6, height * 0.01), // Minimum 6px, or 1% of height
+        containerPadding: Math.max(16, height * 0.03),
+        componentGap: Math.max(16, height * 0.03),
+        innerGap: Math.max(8, height * 0.015),
       };
     }
 
     // For medium screens (600px - 900px)
     if (height < 900) {
       return {
-        topPadding: Math.max(16, height * 0.04), // Minimum 16px, or 4% of height
-        logoMargin: Math.max(16, height * 0.025), // Minimum 16px, or 2.5% of height
-        textMargin: Math.max(12, height * 0.015), // Minimum 12px, or 1.5% of height
-        buttonMargin: Math.max(12, height * 0.015), // Minimum 12px, or 1.5% of height
+        containerPadding: Math.max(24, height * 0.04),
+        componentGap: Math.max(20, height * 0.035),
+        innerGap: Math.max(12, height * 0.02),
       };
     }
 
     // For large screens (900px - 1200px)
     if (height < 1200) {
       return {
-        topPadding: Math.max(40, height * 0.06), // Minimum 40px, or 6% of height
-        logoMargin: Math.max(72, height * 0.08), // Minimum 72px, or 8% of height
-        textMargin: Math.max(28, height * 0.03), // Minimum 28px, or 3% of height
-        buttonMargin: Math.max(28, height * 0.03), // Minimum 28px, or 3% of height
+        containerPadding: Math.max(32, height * 0.05),
+        componentGap: Math.max(28, height * 0.04),
+        innerGap: Math.max(16, height * 0.025),
       };
     }
 
     // For very large screens (1200px+)
     return {
-      topPadding: Math.max(64, height * 0.08), // Minimum 64px, or 8% of height
-      logoMargin: Math.max(96, height * 0.09), // Minimum 96px, or 9% of height
-      textMargin: Math.max(36, height * 0.035), // Minimum 36px, or 3.5% of height
-      buttonMargin: Math.max(36, height * 0.035), // Minimum 36px, or 3.5% of height
+      containerPadding: Math.max(40, height * 0.06),
+      componentGap: Math.max(36, height * 0.045),
+      innerGap: Math.max(20, height * 0.03),
     };
   };
 
-  const responsivePadding = getResponsivePadding();
+  const spacing = getResponsiveSpacing();
 
   useEffect(() => {
     // Load brand image
@@ -195,43 +191,57 @@ export default function HomeScreen() {
           paddingTop: Platform.OS === 'ios' ? 0 : 0,
         }}
         showsVerticalScrollIndicator={false}>
+        {/* Main container - single flex column */}
         <View
-          className="pt-safe flex-1 flex-col px-4 md:items-center"
+          className="pt-safe flex-1 flex-col items-center justify-center px-4"
           style={{
             zIndex: 1,
-            justifyContent: height > 900 ? 'flex-start' : 'space-between', // Use space-between only for smaller screens
-            paddingBottom: height > 900 ? Math.max(40, height * 0.05) : 16, // More padding at bottom for larger screens
+            paddingTop: spacing.containerPadding,
+            paddingBottom: spacing.containerPadding,
           }}>
           <View
-            className="w-full items-center md:max-w-[1200px]"
-            style={{ paddingTop: responsivePadding.topPadding }}>
-            {/* Logo */}
-            <View className="items-center" style={{ marginTop: responsivePadding.logoMargin }}>
+            className="w-full max-w-[340px] flex-col items-center"
+            style={{
+              gap: spacing.componentGap,
+            }}>
+            {/* Title/Subtitle Section */}
+            <View className="items-center">
+              {/* Logo */}
               <Image
                 source={{ uri: brandImageUrl }}
                 className="h-[50px] w-[200px]"
                 resizeMode="contain"
                 style={{ tintColor: 'white' }}
               />
+
+              {/* Subtitle */}
+              <Text
+                className="text-center text-[16px] font-light text-gray-700 md:text-[17px]"
+                style={{ marginTop: spacing.innerGap }}>
+                To start your journey, it&apos;s best to use headphones or find a quiet spot.
+              </Text>
             </View>
 
-            <Text
-              className="max-w-[340px] text-center text-[16px] font-light text-gray-700 md:text-[17px]"
+            {/* Instagram Button */}
+            <TouchableOpacity
+              className="h-[52px] w-full flex-row items-center justify-center gap-2.5 rounded-[52px] px-6"
               style={{
-                marginTop: responsivePadding.textMargin,
-                marginBottom:
-                  height > 900 ? responsivePadding.textMargin * 1.5 : responsivePadding.textMargin,
-              }}>
-              To start your journey, it&apos;s best to use headphones or find a quiet spot.
-            </Text>
-          </View>
+                backgroundColor: '#FFFFFF',
+                borderWidth: 1,
+                borderColor: 'rgba(0, 0, 0, 0.15)',
+              }}
+              onPress={openInstagram}>
+              <Svg width="24" height="24" viewBox="0 0 24 24">
+                <Path
+                  d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"
+                  fill="#000"
+                />
+              </Svg>
+              <Text className="text-[17px] font-normal text-black">Follow on IG</Text>
+            </TouchableOpacity>
 
-          <View
-            className="w-full items-center md:max-w-[1200px]"
-            style={{
-              marginTop: height > 900 ? responsivePadding.textMargin * 1.5 : 0,
-            }}>
-            <View className="w-full max-w-[340px] rounded-[28px] bg-white p-4 shadow-sm">
+            {/* Features Card */}
+            <View className="w-full rounded-[28px] bg-white p-4 shadow-sm">
               <View
                 style={{
                   display: 'flex',
@@ -295,35 +305,12 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            {/* Buttons */}
-            <View
-              className="w-full max-w-[340px] flex-col gap-2 md:gap-3"
-              style={{ marginTop: responsivePadding.buttonMargin }}>
-              {/* Try Demo Button */}
-              <TouchableOpacity
-                className="h-[48px] w-full items-center justify-center rounded-[48px] bg-[#07A669]"
-                onPress={handleDemoPress}>
-                <Text className="text-[16px] font-normal text-white">Try Demo</Text>
-              </TouchableOpacity>
-
-              {/* Instagram Button */}
-              <TouchableOpacity
-                className="h-[52px] w-full flex-row items-center justify-center gap-2.5 rounded-[52px] px-6"
-                style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(0, 0, 0, 0.15)',
-                }}
-                onPress={openInstagram}>
-                <Svg width="24" height="24" viewBox="0 0 24 24">
-                  <Path
-                    d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"
-                    fill="#000"
-                  />
-                </Svg>
-                <Text className="text-[17px] font-normal text-black">Follow on IG</Text>
-              </TouchableOpacity>
-            </View>
+            {/* Try Demo Button */}
+            <TouchableOpacity
+              className="h-[48px] w-full items-center justify-center rounded-[48px] bg-[#07A669]"
+              onPress={handleDemoPress}>
+              <Text className="text-[16px] font-normal text-white">Try Demo</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>

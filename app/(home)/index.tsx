@@ -3,7 +3,7 @@ import { ResizeMode, Video } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Image, Linking, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Linking, Platform, Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { mixpanel } from 'utils/mixpanel';
 import { supabase } from 'utils/supabase';
@@ -135,114 +135,119 @@ export default function HomeScreen() {
         style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 0 }}
       />
 
-      <View
-        className="pt-safe flex-1 flex-col justify-between px-4 pb-8 md:items-center md:justify-center"
-        style={{ zIndex: 1 }}>
-        <View className="w-full items-center pt-8 md:max-w-[1200px]">
-          {/* Logo */}
-          <View className="mt-16 items-center">
-            <Image
-              source={{ uri: brandImageUrl }}
-              className="h-[50px] w-[200px]"
-              resizeMode="contain"
-              style={{ tintColor: 'black' }}
-            />
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}>
+        <View
+          className="pt-safe flex-1 flex-col justify-between px-4 pb-8 md:items-center md:justify-center"
+          style={{ zIndex: 1 }}>
+          <View className="w-full items-center pt-8 md:max-w-[1200px]">
+            {/* Logo */}
+            <View className="mt-16 items-center">
+              <Image
+                source={{ uri: brandImageUrl }}
+                className="h-[50px] w-[200px]"
+                resizeMode="contain"
+                style={{ tintColor: 'black' }}
+              />
+            </View>
+
+            <Text className="mb-8 mt-6 max-w-[340px] text-center text-[17px] font-light text-gray-700">
+              To start your journey, it&apos;s best to use headphones or find a quiet spot.
+            </Text>
           </View>
 
-          <Text className="mb-8 mt-6 max-w-[340px] text-center text-[17px] font-light text-gray-700">
-            To start your journey, it&apos;s best to use headphones or find a quiet spot.
-          </Text>
-        </View>
+          <View className="w-full items-center md:max-w-[1200px]">
+            <View className="w-full max-w-[340px] rounded-[28px] bg-white p-4 shadow-sm">
+              <View className="flex flex-col gap-8">
+                {/* Feature 1 */}
+                <View className="flex-row items-center gap-4">
+                  <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
+                    <Ionicons name="mic-outline" size={20} color="#6556F8" />
+                  </View>
+                  <View className="flex-1 flex-col gap-0.5">
+                    <Text className="text-[16px] font-semibold text-black">
+                      Voice Analysis & Insights
+                    </Text>
+                    <Text className="text-[15px] text-gray-500">
+                      Discover more about yourself with a quick chat with AI
+                    </Text>
+                  </View>
+                </View>
 
-        <View className="w-full items-center md:max-w-[1200px]">
-          <View className="w-full max-w-[340px] rounded-[28px] bg-white p-4 shadow-sm">
-            <View className="flex flex-col gap-8">
-              {/* Feature 1 */}
-              <View className="flex-row items-center gap-4">
-                <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
-                  <Ionicons name="mic-outline" size={20} color="#6556F8" />
-                </View>
-                <View className="flex-1 flex-col gap-0.5">
-                  <Text className="text-[16px] font-semibold text-black">
-                    Voice Analysis & Insights
-                  </Text>
-                  <Text className="text-[15px] text-gray-500">
-                    Discover more about yourself with a quick chat with AI
-                  </Text>
-                </View>
-              </View>
-
-              {/* Feature 2 */}
-              <View className="flex-row items-center gap-4">
-                <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
-                  <Ionicons name="heart-outline" size={20} color="#6556F8" />
-                </View>
-                <View className="flex-1 flex-col gap-0.5">
-                  <Text className="text-[16px] font-semibold text-black">
-                    Ditch the dating apps
-                  </Text>
-                  <Text className="text-[15px] text-gray-500">
-                    Enjoy real, lifelike conversations
-                  </Text>
-                  <View className="mt-2">
-                    <View className="self-start rounded-full bg-gray-100 px-2 py-0.5">
-                      <Text className="text-xs font-medium text-gray-500">Coming soon</Text>
+                {/* Feature 2 */}
+                <View className="flex-row items-center gap-4">
+                  <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
+                    <Ionicons name="heart-outline" size={20} color="#6556F8" />
+                  </View>
+                  <View className="flex-1 flex-col gap-0.5">
+                    <Text className="text-[16px] font-semibold text-black">
+                      Ditch the dating apps
+                    </Text>
+                    <Text className="text-[15px] text-gray-500">
+                      Enjoy real, lifelike conversations
+                    </Text>
+                    <View className="mt-2">
+                      <View className="self-start rounded-full bg-gray-100 px-2 py-0.5">
+                        <Text className="text-xs font-medium text-gray-500">Coming soon</Text>
+                      </View>
                     </View>
                   </View>
                 </View>
-              </View>
 
-              {/* Feature 3 */}
-              <View className="flex-row items-center gap-4">
-                <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
-                  <Ionicons name="fitness-outline" size={20} color="#6556F8" />
-                </View>
-                <View className="flex-1 flex-col gap-0.5">
-                  <Text className="text-[16px] font-semibold text-black">
-                    Real-world challenges
-                  </Text>
-                  <Text className="text-[15px] text-gray-500">
-                    Grasp the skill of being yourself in any situation
-                  </Text>
-                  <View className="mt-2">
-                    <View className="self-start rounded-full bg-gray-100 px-2 py-0.5">
-                      <Text className="text-xs font-medium text-gray-500">Coming soon</Text>
+                {/* Feature 3 */}
+                <View className="flex-row items-center gap-4">
+                  <View className="h-10 w-10 items-center justify-center rounded-full border border-[#F2F2F7]">
+                    <Ionicons name="fitness-outline" size={20} color="#6556F8" />
+                  </View>
+                  <View className="flex-1 flex-col gap-0.5">
+                    <Text className="text-[16px] font-semibold text-black">
+                      Real-world challenges
+                    </Text>
+                    <Text className="text-[15px] text-gray-500">
+                      Grasp the skill of being yourself in any situation
+                    </Text>
+                    <View className="mt-2">
+                      <View className="self-start rounded-full bg-gray-100 px-2 py-0.5">
+                        <Text className="text-xs font-medium text-gray-500">Coming soon</Text>
+                      </View>
                     </View>
                   </View>
                 </View>
               </View>
             </View>
-          </View>
 
-          {/* Buttons */}
-          <View className="mt-6 w-full max-w-[340px] flex-col gap-3">
-            {/* Try Demo Button */}
-            <TouchableOpacity
-              className="h-[48px] w-full items-center justify-center rounded-[48px] bg-[#6556F8]"
-              onPress={handleDemoPress}>
-              <Text className="text-[16px] font-normal text-white">Try Demo</Text>
-            </TouchableOpacity>
+            {/* Buttons */}
+            <View className="mt-6 w-full max-w-[340px] flex-col gap-3">
+              {/* Try Demo Button */}
+              <TouchableOpacity
+                className="h-[48px] w-full items-center justify-center rounded-[48px] bg-[#6556F8]"
+                onPress={handleDemoPress}>
+                <Text className="text-[16px] font-normal text-white">Try Demo</Text>
+              </TouchableOpacity>
 
-            {/* Instagram Button */}
-            <TouchableOpacity
-              className="h-[52px] w-full flex-row items-center justify-center gap-2.5 rounded-[52px] px-6"
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderWidth: 1,
-                borderColor: 'rgba(0, 0, 0, 0.15)',
-              }}
-              onPress={openInstagram}>
-              <Svg width="24" height="24" viewBox="0 0 24 24">
-                <Path
-                  d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"
-                  fill="#000"
-                />
-              </Svg>
-              <Text className="text-[17px] font-normal text-black">Follow on IG</Text>
-            </TouchableOpacity>
+              {/* Instagram Button */}
+              <TouchableOpacity
+                className="h-[52px] w-full flex-row items-center justify-center gap-2.5 rounded-[52px] px-6"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(0, 0, 0, 0.15)',
+                }}
+                onPress={openInstagram}>
+                <Svg width="24" height="24" viewBox="0 0 24 24">
+                  <Path
+                    d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"
+                    fill="#000"
+                  />
+                </Svg>
+                <Text className="text-[17px] font-normal text-black">Follow on IG</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }

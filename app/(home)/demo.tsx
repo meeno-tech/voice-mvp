@@ -310,8 +310,8 @@ export default function DemoScreen() {
     return (
       <TouchableOpacity
         className={`
-          absolute bottom-8 left-1/2 h-16 w-[180px]
-          -translate-x-[90px] items-center justify-center rounded-full 
+          absolute bottom-8 left-1/2 h-16 w-[220px]
+          -translate-x-[110px] items-center justify-center rounded-full 
           bg-white md:bottom-10
           ${Platform.OS === 'web' ? 'cursor-pointer' : ''}
         `}
